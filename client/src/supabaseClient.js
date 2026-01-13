@@ -1,19 +1,34 @@
 import { createClient } from '@supabase/supabase-js'
 
-// WARNING: Keys should be in .env.local
+// Intentar cargar variables de entorno
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-    console.error('CRITICAL: Supabase keys are missing!', { supabaseUrl, supabaseKey });
-    // Alert the user on the screen so they know why it's white/broken
-    if (typeof window !== 'undefined') {
-        alert("ERROR DE CONFIGURACIÓN: Faltan las variables VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY. Revisa la consola.");
-    }
+// Helper global para depuración en consola del navegador
+if (typeof window !== 'undefined') {
+    window.checkEnv = () => {
+        console.log('--- ESTADO DE VARIABLES DE ENTORNO ---');
+        console.log('VITE_SUPABASE_URL:', supabaseUrl ? 'DEFINIDO (OK)' : 'FALTANTE (ERROR)');
+        console.log('VITE_SUPABASE_ANON_KEY:', supabaseKey ? 'DEFINIDO (OK)' : 'FALTANTE (ERROR)');
+        console.log('---------------------------------------');
+        if (!supabaseUrl || !supabaseKey) {
+            return "ERROR: Faltan variables. Revisa la configuración en Vercel.";
+        }
+        return "OK: Variables detectadas.";
+    };
 }
 
-// Create client only if keys exist to avoid "supabaseUrl is required" crash
-// If missing, we export a null client which will fail later but allow checking logs
-export const supabase = (supabaseUrl && supabaseKey)
-    ? createClient(supabaseUrl, supabaseKey)
-    : null;
+let supabase = null;
+
+if (supabaseUrl && supabaseKey) {
+    try {
+        supabase = createClient(supabaseUrl, supabaseKey);
+    } catch (e) {
+        console.error("Error inicializando Supabase Client:", e);
+    }
+} else {
+    console.error('CRITICAL: Faltan las llaves de Supabase. La aplicación no funcionará correctamente.');
+    // No usamos alert() bloqueante, pero logueamos fuerte
+}
+
+export { supabase };

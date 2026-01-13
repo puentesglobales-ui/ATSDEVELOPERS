@@ -3,7 +3,8 @@ import axios from 'axios';
 const getBaseUrl = () => {
     // FORCE HARDCODED URL FOR PRODUCTION TO AVOID ENV VAR ISSUES
     if (import.meta.env.PROD) {
-        return import.meta.env.VITE_API_URL || 'https://ats-career-server.onrender.com/api';
+        // Fallback actualizado al servidor real confirmado por el usuario
+        return import.meta.env.VITE_API_URL || 'https://ats-backend-l95k.onrender.com/api';
     }
 
     // Localhost fallback

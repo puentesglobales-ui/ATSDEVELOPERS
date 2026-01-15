@@ -182,13 +182,7 @@ const LandingPage = () => {
                         {/* Abstract Representation instead of Photo */}
                         <div className="relative h-[500px] w-full bg-gradient-to-tr from-slate-900 to-slate-800 rounded-[3rem] border border-cyan-500/20 overflow-hidden flex items-center justify-center group">
                             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(34,211,238,0.1),transparent_70%)]"></div>
-                            <Globe size={200} className="text-slate-800 group-hover:text-cyan-900/50 transition-colors duration-700" strokeWidth={0.5} />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="text-center">
-                                    <div className="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-cyan-300 to-blue-600 opacity-20 select-none">GLOBAL</div>
-                                    <div className="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-cyan-300 to-blue-600 opacity-20 select-none">MINDSET</div>
-                                </div>
-                            </div>
+                            <Globe size={240} className="text-cyan-500/80 drop-shadow-[0_0_30px_rgba(34,211,238,0.4)] animate-pulse" strokeWidth={0.8} />
                         </div>
                     </div>
                 </div>

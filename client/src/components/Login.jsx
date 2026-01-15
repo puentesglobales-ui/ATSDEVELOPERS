@@ -24,9 +24,11 @@ export default function Login() {
         try {
             if (isSignUp) {
                 // Validación básica
+                /*
                 if (accountType === 'student' && accessCode.length < 6) {
                     throw new Error('El código debe tener 6 caracteres.');
                 }
+                */
 
                 // SIMPLIFICADO: Sin opciones extra para probar si es el Redirect lo que falla
                 const { data, error } = await supabase.auth.signUp({

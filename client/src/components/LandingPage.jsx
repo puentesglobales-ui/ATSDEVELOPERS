@@ -179,13 +179,13 @@ const LandingPage = () => {
                             </ul>
                         </div>
 
-                        {/* Abstract Representation instead of Photo */}
-                        <div className="relative h-[500px] w-full bg-gradient-to-tr from-slate-900 to-slate-800 rounded-[3rem] border border-cyan-500/20 overflow-hidden flex items-center justify-center group p-10">
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(34,211,238,0.1),transparent_70%)]"></div>
+                        {/* Logo Puentes Globales */}
+                        <div className="relative h-[500px] w-full bg-slate-900 rounded-[3rem] border border-cyan-500/20 overflow-hidden flex items-center justify-center group p-10 shadow-2xl">
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.05),transparent_60%)]"></div>
                             <img
-                                src="/logo-hero.png"
-                                alt="Global Mindset Logo"
-                                className="max-w-full max-h-full object-contain drop-shadow-[0_0_30px_rgba(34,211,238,0.4)] opacity-80 group-hover:opacity-100 transition-opacity duration-700"
+                                src="/logo-puentes.png"
+                                alt="Puentes Globales Logo"
+                                className="max-w-[80%] max-h-[80%] object-contain rounded-full shadow-[0_0_50px_rgba(34,211,238,0.2)] transition-transform duration-700 group-hover:scale-105"
                             />
                         </div>
                     </div>

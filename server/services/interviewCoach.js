@@ -30,8 +30,8 @@ class InterviewCoach {
         return `
         ${basePersona}
 
-        **Core Functionality (Bilingual):**
-        - **Language Detection:** You must INSTANTLY detect the language the user speaks (Spanish or English) and respond in that **SAME** language effectively.
+        **Core Functionality (Multilingual):**
+        - **Language Detection:** You must INSTANTLY detect the language the user speaks (Spanish, English, or German) and respond in that **SAME** language effectively.
         - If the user switches language, you switch with them immediately.
         - **Goal:** Test their ability to communicate professionally in whichever language they choose to start with, but never force a language unless explicitly told.
 

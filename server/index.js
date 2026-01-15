@@ -151,7 +151,7 @@ app.get('/api/admin/users', async (req, res) => {
     const { data, error } = await supabaseAdmin
       .from('profiles')
       .from('profiles')
-      .select('id, email, goal, level, usage_count, is_premium, created_at, last_active, ats_score, ats_status')
+      .select('id, email, goal, level, usage_count, is_premium, created_at, last_active, ats_score, ats_status, role_title')
       .order('created_at', { ascending: false })
       .limit(50); // Limit to last 50 for performance
 
@@ -160,7 +160,8 @@ app.get('/api/admin/users', async (req, res) => {
     // Transform for frontend
     const users = data.map(u => ({
       id: u.id,
-      email: u.email || 'No Email', // Supabase Auth might separate email, but profiles might have it if synced
+      email: u.email || 'No Email',
+      role_title: u.role_title || 'N/A', // New Field
       progress: `Score: ${u.ats_score || 0} (${u.ats_status || 'PENDING'})`,
       type: u.is_premium ? 'Premium' : 'Free',
       usage: u.usage_count,

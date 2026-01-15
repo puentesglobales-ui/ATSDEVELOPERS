@@ -456,6 +456,7 @@ const UsersSection = () => {
                                     </div>
                                     <div>
                                         <p className="font-bold text-white max-w-[150px] truncate md:max-w-none">{user.email || `Usuario ${i}`}</p>
+                                        <p className="text-xs text-blue-300 font-semibold">{user.role_title || 'Sin Rol Definido'}</p>
                                         <p className="text-xs text-slate-500">ID: {user.id ? user.id.substring(0, 8) : 'anon'}...</p>
                                     </div>
                                 </div>

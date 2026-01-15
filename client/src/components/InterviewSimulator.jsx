@@ -3,16 +3,32 @@ import { motion } from 'framer-motion';
 import { Mic, MicOff, Volume2, User, Cpu, Award } from 'lucide-react';
 import api from '../services/api';
 
-const InterviewSimulator = () => {
+const InterviewSimulator = ({ session }) => {
     // Session State
     const [started, setStarted] = useState(false);
     const [mode, setMode] = useState('hardcore');
     const [messages, setMessages] = useState([]);
 
-    // Inputs (For MVP, we ask user to paste again if we didn't store it)
-    // Ideally we pull from localStorage if ATS scanner ran
+    // Inputs
     const [cvText, setCvText] = useState('');
     const [jobDesc, setJobDesc] = useState('');
+
+    // Pre-fill from profile if available
+    useEffect(() => {
+        if (session?.user?.id) {
+            // Fetch profile to see if we have context
+            api.get(`/profile/${session.user.id}`)
+                .then(res => {
+                    const p = res.data;
+                    if (p && p.role_title) {
+                        // Construct a "Virtual" Job Description based on their goal
+                        const constructedJD = `Postulación para: ${p.role_title} en industria ${p.role_industry}.\nContexto Experiencia: ${p.work_context || 'No especificado'}`;
+                        setJobDesc(constructedJD);
+                    }
+                })
+                .catch(err => console.log("No profile context found", err));
+        }
+    }, [session]);
 
     // Audio State
     const [isListening, setIsListening] = useState(false);

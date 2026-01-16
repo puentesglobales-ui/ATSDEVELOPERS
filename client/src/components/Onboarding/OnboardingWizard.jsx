@@ -144,21 +144,23 @@ export default function OnboardingWizard({ session, onComplete }) {
                 };
 
                 // 1. Save directly to Supabase (Bypassing Backend RLS issues)
+                // Use UPSERT to allow creating the profile if the trigger failed
                 const { error } = await supabase
                     .from('profiles')
-                    .update(profilePayload)
-                    .eq('id', session.user.id);
+                    .upsert({
+                        id: session.user.id, // Explicit ID for upsert
+                        ...profilePayload
+                    });
 
                 if (error) throw error;
 
                 // 2. (Optional) If CV file exists, we could analyze it here
                 if (formData.cv?.file) {
                     console.log("CV File pending upload:", formData.cv.file.name);
-                    // We can invoke the backend analysis later or upload to storage
                 }
 
                 if (onComplete) onComplete();
-                else navigate('/dashboard');
+                else navigate('/ats-scanner');
             } catch (error) {
                 console.error("Error saving profile:", error);
                 const serverMsg = error.message || "Error desconocido";

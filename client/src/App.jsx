@@ -127,7 +127,7 @@ function App() {
 
           <Route path="/onboarding" element={
             <ProtectedRoute>
-              {onboardingComplete ? <Navigate to="/dashboard" /> : <OnboardingWizard session={session} onComplete={() => { setOnboardingComplete(true); }} />}
+              {onboardingComplete ? <Navigate to="/ats-scanner" /> : <OnboardingWizard session={session} onComplete={() => { setOnboardingComplete(true); }} />}
             </ProtectedRoute>
           } />
 

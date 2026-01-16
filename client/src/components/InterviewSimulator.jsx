@@ -45,33 +45,37 @@ const InterviewSimulator = ({ session }) => {
         scrollToBottom();
     }, [messages]);
 
+    const [currentFeedback, setCurrentFeedback] = useState(null);
+    const [processing, setProcessing] = useState(false);
+
     const handleStart = async () => {
         if (!session) {
             alert("Debes iniciar sesión para entrenar.");
             return;
         }
-
-        // MVP Authorization Mock
-        const userType = session?.user?.user_metadata?.is_premium ? 'Premium' : 'Free';
-        // Allow Free users for MVP demo, but logically we would check usage limit here
-
-        if (!cvText || !jobDesc) {
-            alert("Necesitamos tu CV y la Vacante para entrenar a Alex.");
-            return;
-        }
-
+        if (!cvText || !jobDesc) return alert("Pega tu CV y la Vacante primero.");
         setStarted(true);
         // Add loading message
-        setMessages([{ role: 'assistant', content: "Leyendo tu perfil... (Iniciando simulación)" }]);
+        const initialLoadMsg = { role: 'assistant', content: "Leyendo tu perfil... (Iniciando simulación)" };
+        setMessages([initialLoadMsg]);
 
         try {
-            const res = await api.post('/interview/start', { cvText, jobDescription: jobDesc, mode });
+            // Add user start message hidden logic
+            const historyForApi = [{ role: 'system', content: `Start with persona: ${mode}` }];
 
-            // Update with real greeting
-            setMessages([{ role: 'assistant', content: res.data.message }]);
+            const { data } = await api.post('/interview/start', {
+                cvText, jobDescription: jobDesc, mode
+            });
+            // V2: data = { message, feedback, stage }
+            const newMessage = { role: 'assistant', content: data.message };
+            setMessages([newMessage]);
+
+            if (data.feedback) setCurrentFeedback(data.feedback);
+
         } catch (e) {
             console.error(e);
-            setMessages([{ role: 'assistant', content: "Error iniciando a Alex. Revisa la consola." }]);
+            alert("Error iniciando a Alex.");
+            setStarted(false);
         }
     };
 
@@ -80,13 +84,16 @@ const InterviewSimulator = ({ session }) => {
         setMessages(newHistory);
 
         try {
-            const res = await api.post('/interview/chat', {
+            const { data } = await api.post('/interview/chat', {
                 messages: newHistory,
                 cvText,
                 jobDescription: jobDesc
             });
 
-            setMessages([...newHistory, { role: 'assistant', content: res.data.message }]);
+            const aiMsg = { role: 'assistant', content: data.message };
+            setMessages([...newHistory, aiMsg]);
+
+            if (data.feedback) setCurrentFeedback(data.feedback);
         } catch (e) {
             console.error(e);
         }
@@ -97,49 +104,54 @@ const InterviewSimulator = ({ session }) => {
     const [inputText, setInputText] = useState('');
 
     const handleAudioUpload = async (audioBlob) => {
-        setIsListening(true);
+        setIsListening(false);
+        setProcessing(true);
 
         const formData = new FormData();
-        formData.append('audio', audioBlob, 'voice.webm');
+        formData.append('audio', audioBlob, 'input.webm'); // Ensure filename
         formData.append('cvText', cvText);
         formData.append('jobDescription', jobDesc);
         formData.append('messages', JSON.stringify(messages));
 
         try {
-            const res = await api.post('/interview/speak', formData, {
+            const { data } = await api.post('/interview/speak', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            const { userText, assistantText, audioBase64 } = res.data;
-
-            const newHistory = [...messages,
-            { role: 'user', content: userText },
-            { role: 'assistant', content: assistantText }
+            // Update UI
+            // data = { userText, assistantText, feedback, stage, audioBase64 }
+            const newMsgs = [
+                ...messages,
+                { role: 'user', content: data.userText },
+                { role: 'assistant', content: data.assistantText }
             ];
-            setMessages(newHistory);
+            setMessages(newMsgs);
 
-            if (audioBase64) {
-                const audio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
-                setIsSpeaking(true);
-                audio.onended = () => setIsSpeaking(false);
-                audio.play().catch(e => console.error("Audio playback error:", e));
-            }
+            // Show Feedback
+            if (data.feedback) setCurrentFeedback(data.feedback);
 
-        } catch (e) {
-            console.error(e);
+            // Play Audio
+            setIsSpeaking(true);
+            const audio = new Audio(`data:audio/mp3;base64,${data.audioBase64}`);
+            audio.onended = () => setIsSpeaking(false);
+            audio.play();
+
+        } catch (error) {
+            console.error("Error processing audio:", error);
             alert("Error procesando audio. ¿Servidor online?");
         } finally {
-            setIsListening(false);
+            setProcessing(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-black text-white p-4 flex flex-col md:flex-row gap-4">
-            {/* LEFT: AVATAR / CONFIG */}
+        <div className="min-h-screen bg-black text-white p-4 font-sans flex flex-col md:flex-row gap-4">
+
+            {/* LEFT: AVATAR & CONFIG */}
             <div className="w-full md:w-1/3 flex flex-col gap-4">
-                <div className="bg-slate-900 rounded-3xl p-6 border border-slate-800 flex-1 relative overflow-hidden">
+                <div className="bg-slate-900 rounded-3xl p-6 border border-slate-800 flex-1 relative overflow-hidden flex flex-col items-center justify-center">
                     {!started ? (
-                        <div className="space-y-6 z-10 relative">
+                        <div className="space-y-6 z-10 relative w-full">
                             <h2 className="text-3xl font-bold text-center bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Configurar Entrevista</h2>
 
                             <div>
@@ -156,21 +168,42 @@ const InterviewSimulator = ({ session }) => {
                             </button>
                         </div>
                     ) : (
-                        <div className="h-full flex flex-col items-center justify-center p-4">
+                        <>
                             {/* AVATAR CIRCLE */}
                             <motion.div
                                 animate={{ scale: isSpeaking ? [1, 1.05, 1] : 1 }}
                                 transition={{ repeat: Infinity, duration: 2 }}
-                                className="w-48 h-48 rounded-full border-4 border-cyan-500/50 flex items-center justify-center bg-gradient-to-br from-slate-800 to-black shadow-[0_0_50px_rgba(6,182,212,0.3)]"
+                                className="w-48 h-48 rounded-full border-4 border-cyan-500/50 flex items-center justify-center bg-gradient-to-br from-slate-800 to-black shadow-[0_0_50px_rgba(6,182,212,0.3)] mb-6"
                             >
                                 <User size={80} className="text-slate-400" />
                             </motion.div>
-                            <h3 className="mt-6 text-2xl font-bold text-white">Alex (Reclutador)</h3>
-                            <div className="mt-2 flex gap-2">
+                            <h3 className="text-2xl font-bold text-white">Alex (Reclutador)</h3>
+                            <div className="mt-2 flex gap-2 mb-8">
                                 <span className="px-2 py-1 bg-red-900/50 text-red-400 text-xs rounded border border-red-900">Modo: Estricto</span>
                                 <span className="px-2 py-1 bg-blue-900/50 text-blue-400 text-xs rounded border border-blue-900">Live Audio</span>
                             </div>
-                        </div>
+
+                            {/* COACH FEEDBACK CARD */}
+                            {currentFeedback && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="w-full bg-slate-800/80 backdrop-blur rounded-xl p-4 border-l-4 border-yellow-500"
+                                >
+                                    <h4 className="text-yellow-400 text-xs font-bold uppercase mb-2 flex justify-between">
+                                        <span>Mentor IA Analysis</span>
+                                        <span>Score: {currentFeedback.score}/100</span>
+                                    </h4>
+                                    <p className="text-sm text-slate-300 mb-2 italic">"{currentFeedback.analysis}"</p>
+
+                                    {currentFeedback.suggestion && (
+                                        <div className="bg-slate-900/50 p-2 rounded text-xs text-green-300">
+                                            <span className="font-bold">💡 Tip:</span> {currentFeedback.suggestion}
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

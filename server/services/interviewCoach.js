@@ -8,53 +8,50 @@ class InterviewCoach {
     /**
      * initializes the interview context
      */
-    generateSystemPrompt(cvText, jobDescription, mode = 'hardcore') {
-        // Logic for Dual Product: 'hardcore' (Recruiter) vs 'coach' (Educational)
-        const isRecruiterMode = mode === 'hardcore';
-
-        const basePersona = isRecruiterMode
-            ? "You are 'Alex', a strict and skeptical Senior Technical Recruiter at a top global firm. You are conducting a high-stakes screening interview."
-            : "You are 'Alex', an empathetic Career Coach specializing in helping professionals land their dream job.";
-
-        const behaviorInstructions = isRecruiterMode
-            ? `
-            - Be professional, slightly distant, and highly critical.
-            - If an answer is vague or lacks detail, interrupt (politely) and demand concrete examples using the STAR method.
-            - Focus on identifying 'red flags' or inconsistencies in the CV vs. their answers.
-            - Do NOT provide help, hints, or corrections during the interview. Save feedback for the end.`
-            : `
-            - Be supportive, patient, and encouraging.
-            - If an answer is weak, pause the mock interview to explain *why* it was weak and suggest a better approach (e.g., "That was okay, but try structuring it like this...").
-            - Focus on building the candidate's confidence and fluency.`;
-
+    generateSystemPrompt(cvText, jobDescription) {
         return `
-        ${basePersona}
+        **IDENTITY:**
+        You are "Alex", a generic simulator engine acting as two entities simultaneously:
+        1. **ALEX (The Recruiter):** A sharp, professional Senior Technical Recruiter. Skeptical, focused on facts, testing the candidate.
+        2. **COACH (The Teacher):** An invisible mentor evaluating the candidate's performance in real-time.
 
-        **Core Functionality (Multilingual):**
-        - **Language Detection:** You must INSTANTLY detect the language the user speaks (Spanish, English, or German) and respond in that **SAME** language effectively.
-        - If the user switches language, you switch with them immediately.
-        - **Goal:** Test their ability to communicate professionally in whichever language they choose to start with, but never force a language unless explicitly told.
+        **INPUT CONTEXT:**
+        - CV Content: "${cvText.slice(0, 2000)}..."
+        - Job Description: "${jobDescription.slice(0, 1000)}..."
 
-        **Candidate Profile (Memory):**
-        CV Context: "${cvText.slice(0, 3000)}"
-        Job Target: "${jobDescription.slice(0, 3000)}"
+        **YOUR GOAL:**
+        Conduct a realistic job interview while simultaneously providing educational feedback JSON data.
 
-        **Interview Guidelines:**
-        ${behaviorInstructions}
+        **INTERVIEW PHASES (The Layers):**
+        1. **Icebreaker:** "Tell me about yourself", "Why this role?". Focus on clarity.
+        2. **CV Deep Dive:** Ask about specific roles/skills in the CV. Dig for truth.
+        3. **Situational (STAR):** "Tell me about a time you failed...", "Conflict resolution".
+        4. **Pressure:** "Why should we hire you?", "Salary expectations".
 
-        **Interaction Rules:**
-        1. **Start:** Introduce yourself briefly based on your active Persona (${mode}) and ask the **First Question**. This question must be specific to a potential weakness or key requirement in their CV/Job Description.
-        2. **Brevity:** Keep your responses short (max 2-3 sentences) to maintain a natural spoken conversation rhythm.
-        3. **STAR Method:** Push for Situation, Task, Action, Result. If they miss the 'Result', ask for it.
-        4. **Realism:** Do not use robotic phrases like "Thank you for that answer." React naturally: "Okay, moving on..." or "Interesting, but I need more on..."
-        5. **No AI Meta:** Never admit to being an AI, model, or text-based system. Stay in character 100%.
-        6. **Voice Capable:** YOU CAN HEAR AND SPEAK. If the user says "I want to talk" or "speak to me", reply: "I am listening. Go ahead." or "I'm right here, tell me." NEVER say "I cannot make calls" or "I am text only".
-        7. **Medium Agnostic:** Treat every input as part of a spoken conversation. If they write, assume they are transcribing their thought. If they speak, you hear it.
+        **RESPONSE FORMAT (STRICT JSON):**
+        You MUST return valid JSON. Do not output markdown blocks.
+        Structure:
+        {
+            "dialogue": "String. What Alex says to the candidate. Keep it spoken, natural, professional. Max 2-3 sentences.",
+            "feedback": {
+                "score": Integer (0-100),
+                "analysis": "String. Brief analysis of the user's LAST answer.",
+                "good": "String. What they did well (or null).",
+                "bad": "String. What they did wrong (or null).",
+                "suggestion": "String. How a Senior request would have answered better (didactic)."
+            },
+            "stage": "String. Current Phase (e.g. 'ICEBREAKER', 'TECHNICAL', 'BEHAVIORAL')"
+        }
+
+        **BEHAVIOR RULES:**
+        - **First Turn:** If history is empty, Introduce yourself briefly and ask the first question (Phase 1). Feedback should be null.
+        - **Subsequent Turns:** Analyze the user's input. Give feedback in the JSON. Then, as Alex, react naturally and ask the NEXT question or follow up.
+        - **Language:** Detect user language (Spanish/English/German) and match it for 'dialogue'. Keep 'feedback' in the SAME language.
+        - **Voice Capable:** If user mentions speaking/audio, say "I'm listening".
         `;
     }
 
     async getInterviewResponse(chatHistory, cvText, jobDescription) {
-        // Construct the full conversation context
         const systemPrompt = this.generateSystemPrompt(cvText, jobDescription);
 
         const messages = [
@@ -63,21 +60,50 @@ class InterviewCoach {
         ];
 
         try {
-            // Determine provider based on user (or default to Premium for now)
-            // Ideally we'd pass userId to getInterviewResponse, but for now we rely on defaults or simple logic if needed.
-            // Using a dummy ID or null ensures Default/Premium route unless configured otherwise.
-            const providerConfig = this.router.getRoute(null);
+            // Using logic from v2 strategy: Force JSON mode
+            const openai = require('openai'); // Lazy load if needed or use from outer scope if available, but assuming router handles it usually. 
+            // Actually, this class uses 'this.router'. We need to check if router supports JSON mode arg or if we bypass router for this specific structured task.
+            // For MVP speed and stability, let's use the router but pass a specific instruction or just use OpenAI directly here if router is too simple.
+            // Let's rely on the router's chat method but we need to ensure it passes the system prompt correctly.
+            // "this.router.chat" might return a string.
+            // Let's bypass router wrapper for this specific "Coach Mode" to ensure we get JSON, or modify router. 
+            // To be safe and consistent with the codebase "aiRouter.js":
 
-            const response = await this.router.chat(
-                messages,
-                providerConfig
-            );
+            // Let's assume we can ask the router. If not, we'll implement direct call here for "Smart Features".
+            // Since we need "response_format: { type: 'json_object' }", let's use the OpenAI instance directly if possible or update the router.
+            // Checking imports... 'aiRouter' is imported. 
 
-            // If the router returns a string, use it.
-            return response.text;
+            // DIRECT OPENAI CALL FOR CONTROL (Bypassing simple router for complex JSON task)
+            const { OpenAI } = require('openai');
+            const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.trim() : '' });
+
+            const completion = await client.chat.completions.create({
+                model: "gpt-4o",
+                messages: messages,
+                response_format: { type: "json_object" },
+                temperature: 0.7
+            });
+
+            const content = completion.choices[0].message.content;
+
+            // Validate JSON
+            try {
+                const parsed = JSON.parse(content);
+                return parsed; // Return Object, Controller will handle it
+            } catch (e) {
+                console.error("JSON Parse Error in Coach:", e);
+                return {
+                    dialogue: "Internal error in Alex's brain. Let's continue...",
+                    feedback: null
+                };
+            }
+
         } catch (error) {
             console.error("Interview Coach Error:", error);
-            return "Interviewer is reviewing notes... (Error)";
+            return {
+                dialogue: "I'm having trouble connecting to my evaluation matrix.",
+                feedback: null
+            };
         }
     }
 }

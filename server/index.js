@@ -438,15 +438,9 @@ app.post('/api/interview/start', async (req, res) => {
   }
 
   try {
-    // Generate the initial proactive greeting
-    // In a real chat loop, we'd append this to history.
-    // Here we just ask "Alex" to start meaning we send empty history + prompt.
-    const initialResponse = await interviewCoach.getInterviewResponse([], cvText, jobDescription);
-
-    // We optionally generate audio for the greeting too
-    // For MVP, return text, let frontend request audio if needed or bundle it.
-
-    res.json({ message: initialResponse });
+    const responseObj = await interviewCoach.getInterviewResponse([], cvText, jobDescription);
+    // V2: responseObj is { dialogue, feedback, stage }
+    res.json({ message: responseObj.dialogue, feedback: responseObj.feedback, stage: responseObj.stage });
   } catch (error) {
     console.error('Interview Start Error:', error);
     res.status(500).json({ error: 'Failed to start interview' });
@@ -455,11 +449,11 @@ app.post('/api/interview/start', async (req, res) => {
 
 app.post('/api/interview/chat', async (req, res) => {
   const { messages, cvText, jobDescription } = req.body;
-  // messages = [{role:'user', content:'...'}, ...]
 
   try {
-    const aiText = await interviewCoach.getInterviewResponse(messages, cvText, jobDescription);
-    res.json({ message: aiText });
+    const responseObj = await interviewCoach.getInterviewResponse(messages, cvText, jobDescription);
+    // V2: responseObj is { dialogue, feedback, stage }
+    res.json({ message: responseObj.dialogue, feedback: responseObj.feedback, stage: responseObj.stage });
   } catch (error) {
     console.error('Interview Chat Error:', error);
     res.status(500).json({ error: 'Failed to chat' });
@@ -513,8 +507,12 @@ app.post('/api/interview/speak', upload.single('audio'), async (req, res) => {
     const newHistory = [...parsedMessages, { role: 'user', content: userText }];
 
     // Get AI response
-    // Ensure we handle promise correctly if interviewCoach is async (it is)
-    const assistantText = await interviewCoach.getInterviewResponse(newHistory, cvText, jobDescription);
+    // Get AI response (V2: returns { dialogue, feedback, stage })
+    const responseObj = await interviewCoach.getInterviewResponse(newHistory, cvText, jobDescription);
+    const assistantText = responseObj.dialogue || "Error generating response.";
+    const feedback = responseObj.feedback;
+    const stage = responseObj.stage;
+
     console.log('[Interview Speak] AI said:', assistantText);
 
     // 3. TTS: ElevenLabs
@@ -561,6 +559,8 @@ app.post('/api/interview/speak', upload.single('audio'), async (req, res) => {
     res.json({
       userText,
       assistantText,
+      feedback,
+      stage,
       audioBase64
     });
 

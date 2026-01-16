@@ -143,18 +143,42 @@ export default function OnboardingWizard({ session, onComplete }) {
                     updated_at: new Date()
                 };
 
-                // 1. Save directly to Supabase (Bypassing Backend RLS issues)
-                // Use UPSERT to allow creating the profile if the trigger failed
-                const { error } = await supabase
+                // 1. Explicit Check: Does profile exist?
+                const { data: existingProfile } = await supabase
                     .from('profiles')
-                    .upsert({
-                        id: session.user.id, // Explicit ID for upsert
-                        ...profilePayload
-                    });
+                    .select('id')
+                    .eq('id', session.user.id)
+                    .maybeSingle(); // safer than single() if 0 rows
 
-                if (error) throw error;
+                let opError = null;
 
-                // 2. (Optional) If CV file exists, we could analyze it here
+                if (existingProfile) {
+                    // UPDATE
+                    const { error } = await supabase
+                        .from('profiles')
+                        .update({
+                            ...profilePayload,
+                            updated_at: new Date()
+                        })
+                        .eq('id', session.user.id);
+                    opError = error;
+                } else {
+                    // INSERT
+                    const { error } = await supabase
+                        .from('profiles')
+                        .insert({
+                            id: session.user.id,
+                            email: session.user.email,
+                            ...profilePayload,
+                            created_at: new Date(),
+                            updated_at: new Date()
+                        });
+                    opError = error;
+                }
+
+                if (opError) throw opError;
+
+                // 2. (Optional) CV handling
                 if (formData.cv?.file) {
                     console.log("CV File pending upload:", formData.cv.file.name);
                 }
@@ -164,7 +188,8 @@ export default function OnboardingWizard({ session, onComplete }) {
             } catch (error) {
                 console.error("Error saving profile:", error);
                 const serverMsg = error.message || "Error desconocido";
-                alert(`Error guardando perfil: ${serverMsg}`);
+                // Distinct error message to verify deployment
+                alert(`Falló Guardado Cliente: ${serverMsg}`);
             } finally {
                 setLoading(false);
             }

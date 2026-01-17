@@ -13,6 +13,7 @@ const InterviewSimulator = ({ session }) => {
     // Inputs
     const [cvText, setCvText] = useState('');
     const [jobDesc, setJobDesc] = useState('');
+    const [profileData, setProfileData] = useState(null);
 
     // Pre-fill from profile if available
     useEffect(() => {
@@ -21,6 +22,7 @@ const InterviewSimulator = ({ session }) => {
             api.get(`/profile/${session.user.id}`)
                 .then(res => {
                     const p = res.data;
+                    setProfileData(p);
                     if (p && p.role_title) {
                         // Construct a "Virtual" Job Description based on their goal
                         const constructedJD = `Postulación para: ${p.role_title} en industria ${p.role_industry}.\nContexto Experiencia: ${p.work_context || 'No especificado'}`;
@@ -162,18 +164,36 @@ const InterviewSimulator = ({ session }) => {
                         <div className="space-y-6 z-10 relative w-full">
                             <h2 className="text-3xl font-bold text-center bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Configurar Entrevista</h2>
 
-                            <div>
-                                <label className="text-xs text-slate-500 uppercase">Pegar Texto CV</label>
-                                <textarea value={cvText} onChange={e => setCvText(e.target.value)} className="w-full bg-slate-800 p-2 rounded text-xs h-24 text-slate-300" placeholder="Pega el texto de tu CV aquí..." />
-                            </div>
-                            <div>
-                                <label className="text-xs text-slate-500 uppercase">Pegar Vacante</label>
-                                <textarea value={jobDesc} onChange={e => setJobDesc(e.target.value)} className="w-full bg-slate-800 p-2 rounded text-xs h-24 text-slate-300" placeholder="Descripción del puesto..." />
-                            </div>
+                            {/* ATS GATEKEEPER CHECK */}
+                            {profileData && profileData.ats_score !== null && profileData.ats_status === 'RECHAZADO' ? (
+                                <div className="bg-red-900/50 border border-red-500 p-6 rounded-xl text-center">
+                                    <h3 className="text-red-400 font-bold text-xl mb-2 flex items-center justify-center gap-2">
+                                        <Award size={24} /> ACCESO DENEGADO
+                                    </h3>
+                                    <p className="text-slate-300 text-sm mb-4">
+                                        Tu CV no superó el filtro ATS (Score: {profileData.ats_score}). <br />
+                                        El sistema te ha descartado automáticamente para la entrevista.
+                                    </p>
+                                    <button onClick={() => window.location.href = '/ats-scanner'} className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                                        VOLVER A MEJORAR CV
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase">Pegar Texto CV</label>
+                                        <textarea value={cvText} onChange={e => setCvText(e.target.value)} className="w-full bg-slate-800 p-2 rounded text-xs h-24 text-slate-300" placeholder="Pega el texto de tu CV aquí..." />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase">Pegar Vacante</label>
+                                        <textarea value={jobDesc} onChange={e => setJobDesc(e.target.value)} className="w-full bg-slate-800 p-2 rounded text-xs h-24 text-slate-300" placeholder="Descripción del puesto..." />
+                                    </div>
 
-                            <button onClick={handleStart} className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold shadow-lg shadow-blue-900/50 transition-all">
-                                INICIAR "ALEX" ({mode})
-                            </button>
+                                    <button onClick={handleStart} className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold shadow-lg shadow-blue-900/50 transition-all">
+                                        INICIAR "ALEX" ({mode})
+                                    </button>
+                                </>
+                            )}
                         </div>
                     ) : (
                         <>
@@ -191,7 +211,7 @@ const InterviewSimulator = ({ session }) => {
                                 <span className="px-2 py-1 bg-blue-900/50 text-blue-400 text-xs rounded border border-blue-900">Live Audio</span>
                             </div>
 
-                            {/* COACH FEEDBACK CARD */}
+                            {/* COACH FEEDBACK CARD (SAFEGUARDED) */}
                             {currentFeedback && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
@@ -200,11 +220,11 @@ const InterviewSimulator = ({ session }) => {
                                 >
                                     <h4 className="text-yellow-400 text-xs font-bold uppercase mb-2 flex justify-between">
                                         <span>Mentor IA Analysis</span>
-                                        <span>Score: {currentFeedback.score}/100</span>
+                                        <span>Score: {currentFeedback?.score || 'N/A'}/100</span>
                                     </h4>
-                                    <p className="text-sm text-slate-300 mb-2 italic">"{currentFeedback.analysis}"</p>
+                                    <p className="text-sm text-slate-300 mb-2 italic">"{currentFeedback?.analysis || 'Analizando respuesta...'}"</p>
 
-                                    {currentFeedback.suggestion && (
+                                    {currentFeedback?.suggestion && (
                                         <div className="bg-slate-900/50 p-2 rounded text-xs text-green-300">
                                             <span className="font-bold">💡 Tip:</span> {currentFeedback.suggestion}
                                         </div>

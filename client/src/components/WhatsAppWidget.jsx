@@ -6,8 +6,8 @@ const API_BASE = 'https://crmwhatsapp-xari.onrender.com/api'; // Tu servidor en 
 
 const WhatsAppWidget = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const [isEnabled, setIsEnabled] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [isEnabled, setIsEnabled] = useState(true); // Default TRUE for visibility test
+    const [loading, setLoading] = useState(false); // Default FALSE
     const [messages, setMessages] = useState([
         { role: 'system', text: '¡Hola! Soy Cooper. ¿En qué puedo ayudarte hoy?' }
     ]);
@@ -95,7 +95,7 @@ const WhatsAppWidget = () => {
     if (!loading && !isEnabled) return null;
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 font-sans">
+        <div className="fixed bottom-6 right-6 z-[9999] font-sans">
             {/* Chat Window */}
             {isOpen && (
                 <div className="bg-white rounded-2xl shadow-2xl w-80 sm:w-96 flex flex-col mb-4 overflow-hidden border border-gray-200 animate-in fade-in slide-in-from-bottom-10 duration-300">

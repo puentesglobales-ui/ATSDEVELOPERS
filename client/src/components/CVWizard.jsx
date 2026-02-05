@@ -257,7 +257,8 @@ const CVWizard = () => {
 
             <div className="flex flex-col gap-4 mt-8">
                 <Link
-                    to="/cv-editor"
+                    to="/cv-builder"
+                    state={formData}
                     className="block w-full py-4 text-center bg-white text-slate-900 rounded-xl font-bold text-xl hover:bg-cyan-50 transition-all shadow-lg transform hover:-translate-y-1"
                 >
                     🚀 Abrir Editor Inteligente

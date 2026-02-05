@@ -14,6 +14,7 @@ import OnboardingWizard from './components/Onboarding/OnboardingWizard';
 import PaymentSetup from './components/PaymentSetup';
 import ATSScanner from './components/ATSScanner';
 import CVEditor from './components/CVEditor';
+import CVBuilder from './components/CVBuilder';
 import CVWizard from './components/CVWizard';
 import InterviewSimulator from './components/InterviewSimulator';
 import PsychometricTest from './components/PsychometricTest';
@@ -149,6 +150,7 @@ function App() {
           <Route path="/interview" element={<ProtectedRoute><InterviewSimulator session={session} /></ProtectedRoute>} />
           <Route path="/psychometric" element={<ProtectedRoute><PsychometricTest /></ProtectedRoute>} />
 
+          <Route path="/cv-builder" element={<ProtectedRoute><CVBuilder /></ProtectedRoute>} />
           <Route path="/cv-editor" element={<ProtectedRoute><CVEditor /></ProtectedRoute>} />
           <Route path="/cv-wizard" element={<ProtectedRoute><CVWizard /></ProtectedRoute>} />
           <Route path="/languages" element={<ProtectedRoute><LanguageSelector /></ProtectedRoute>} />

@@ -1,10 +1,18 @@
 /**
- * ATS Logic Simulator
- * Based on user-provided logic:
- * 1. Parsing (Simplified text extraction)
- * 2. Hard Filters (Knock-out questions)
- * 3. Keyword Matching & Scoring
+ * ATS Logic Simulator v2.0
+ * Enhanced with weighted scoring, synonym mapping, and regex-based filtering.
  */
+
+// Diccionario de Sinónimos y Variantes
+const SYNONYMS = {
+    'javascript': ['js', 'es6', 'ecmascript'],
+    'react': ['reactjs', 'react.js'],
+    'node': ['nodejs', 'node.js'],
+    'aws': ['amazon web services', 'cloud'],
+    'english': ['ingles', 'inglés', 'idioma'],
+    'python': ['py'],
+    'sql': ['mysql', 'postgresql', 'postgres']
+};
 
 export const analyzeATS = (cvText, jobDescription) => {
     const findings = {
@@ -13,51 +21,74 @@ export const analyzeATS = (cvText, jobDescription) => {
         critical_errors: [],
         found_keywords: [],
         feedback_summary: "",
-        status: "pending"
+        status: "pending",
+        details: {
+            hard_skills_match: 0,
+            soft_skills_match: 0
+        }
     };
 
-    // 1. NORMALIZATION
-    const cleanCV = cvText.toLowerCase();
-    const cleanJD = jobDescription.toLowerCase();
+    // 1. NORMALIZATION cleaning
+    const cleanCV = cvText.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, " ");
+    const cleanJD = jobDescription.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, " ");
 
-    // 2. EXTRACTION OF KEYWORDS FROM JD (Simple Frequency/Importance logic)
-    // We look for common tech terms or capitalized words in the JD
-    // For this simulation, we'll manually extract some based on heuristics or just use the whole JD text
-    const commonStopWords = ['the', 'and', 'for', 'with', 'you', 'that', 'are', 'work', 'from'];
-    const potentialKeywords = cleanJD.match(/\b[a-z]{3,}\b/g) || [];
+    // Helper to check presence with synonyms
+    const hasTerm = (text, term) => {
+        if (text.includes(term)) return true;
+        const variants = SYNONYMS[term] || [];
+        return variants.some(v => text.includes(v));
+    };
 
-    // Filter out common words to simulate "Entity Extraction"
-    const uniqueKeywords = [...new Set(potentialKeywords)].filter(w => !commonStopWords.includes(w));
+    // 2. EXTRACTION & WEIGHTING
+    // Definimos pesos para dar más valor a lo crítico
+    const CORE_TECH_STACK = ['react', 'node', 'javascript', 'python', 'java', 'sql', 'aws', 'docker', 'kubernetes', 'typescript'];
+    const SOFT_SKILLS = ['liderazgo', 'leadership', 'comunicacion', 'communication', 'teamwork', 'agile', 'scrum'];
 
-    // In a real app, we'd compare against a diverse tech dictionary. 
-    // Here we take top frequent words or specific known skills.
-    const hardSkills = ['react', 'javascript', 'node', 'python', 'sql', 'aws', 'english', 'ingles', 'visa', 'remote', 'remoto'];
+    // Extraemos keywords del JD
+    const uniqueKeywords = [...new Set(cleanJD.match(/\b[a-z]{3,}\b/g) || [])];
 
-    const targetKeywords = uniqueKeywords.filter(w => hardSkills.includes(w) || w.length > 5).slice(0, 15);
+    // Clasificamos las keywords objetivo
+    const targetKeywords = uniqueKeywords.filter(w =>
+        CORE_TECH_STACK.some(core => hasTerm(w, core)) ||
+        SOFT_SKILLS.some(soft => hasTerm(w, soft))
+    ).slice(0, 20); // Top 20 relevantes
 
-    // 3. HARD FILTERS (KNOCK-OUT)
-    const knockOutTerms = ['visa', 'permit', 'b2', 'english', 'titulo'];
+    // 3. HARD FILTERS (KNOCK-OUT v2)
     let knockOutHit = false;
 
-    // Example Knock-out logic: If JD mentions "Visa" and CV doesn't, flagged
-    if (cleanJD.includes('visa') && !cleanCV.includes('visa')) {
-        findings.critical_errors.push("Filtro Eliminatorio: La oferta menciona 'Visa' y tu CV no especifica status migratorio.");
-        // knockOutHit = true; // In strict mode this kills the score
+    // A. Filtro Visa/Permiso (Más inteligente: busca patrones de autorización)
+    const visaRequired = cleanJD.includes('visa') || cleanJD.includes('sponsorship') || cleanJD.includes('work permit');
+    const hasVisaInfo = cleanCV.includes('visa') || cleanCV.includes('permit') || cleanCV.includes('citizen') || cleanCV.includes('ciudadan') || cleanCV.includes('autoriza') || cleanCV.includes('passport') || cleanCV.includes('blue card');
+
+    if (visaRequired && !hasVisaInfo) {
+        findings.critical_errors.push("ALERTA CRÍTICA: La oferta menciona requisitos de visado/permiso y tu CV no detecta estatus migratorio claro (Ciudadanía, Permiso, etc.).");
+        // No bajamos score automáticamente a 0, pero avisamos fuerte.
     }
 
-    if ((cleanJD.includes('english') || cleanJD.includes('ingles')) &&
-        (!cleanCV.includes('english') && !cleanCV.includes('ingles') && !cleanCV.includes('b2') && !cleanCV.includes('c1'))) {
-        findings.critical_errors.push("Filtro Idioma: Requisito de Inglés no detectado en CV.");
+    // B. Filtro Idioma (Regex avanzado)
+    const englishRequired = cleanJD.includes('english') || cleanJD.includes('ingles') || cleanJD.includes('inglés');
+    // Busca: b2, c1, advanced, fluent, native, bilingual, proficiency
+    const englishRegex = /\b(b2|c1|c2|advanced|fluent|native|nativo|avanzado|bilingual|bilingue|proficient|proficiency)\b/;
+
+    if (englishRequired && !englishRegex.test(cleanCV)) {
+        findings.critical_errors.push("Filtro Idioma: Se requiere Inglés pero no detectamos nivel explícito (ej: 'Advanced', 'C1', 'Fluent') en tu CV.");
         knockOutHit = true;
     }
 
-    // 4. SCORING & MATCHING
-    let totalPossibleScore = targetKeywords.length * 10;
-    let currentScore = 0;
+    // 4. SCORING (Weighted)
+    let totalPossibleWeight = 0;
+    let earnedWeight = 0;
 
     targetKeywords.forEach(keyword => {
-        if (cleanCV.includes(keyword)) {
-            currentScore += 10;
+        // Determinar peso
+        let weight = 10; // Base
+        if (CORE_TECH_STACK.some(core => hasTerm(keyword, core))) weight = 25; // Core tech vale mucho
+        if (SOFT_SKILLS.some(soft => hasTerm(keyword, soft))) weight = 10; // Soft skills valen normal
+
+        totalPossibleWeight += weight;
+
+        if (hasTerm(cleanCV, keyword)) {
+            earnedWeight += weight;
             findings.found_keywords.push(keyword);
         } else {
             findings.missing_keywords.push(keyword);
@@ -65,32 +96,29 @@ export const analyzeATS = (cvText, jobDescription) => {
     });
 
     // 5. PENALTIES
-    // If CV is short
-    if (cleanCV.length < 500) {
-        findings.critical_errors.push("Longitud: CV demasiado corto (posible falta de detalle).");
-        currentScore -= 20;
+    if (cleanCV.length < 600) {
+        findings.critical_errors.push("Longitud: CV demasiado breve. Los ATS modernos prefieren detalle sobre responsabilidades.");
+        earnedWeight -= 20;
     }
 
-    // 6. CALCULATE FINAL SCORE
-    // Normalize to 0-100
-    if (totalPossibleScore === 0) totalPossibleScore = 1; // Div/0 safety
-    let finalPercentage = Math.round((currentScore / totalPossibleScore) * 100);
+    // 6. FINAL CALCULATION
+    if (totalPossibleWeight === 0) totalPossibleWeight = 1;
+    let finalPercentage = Math.round((earnedWeight / totalPossibleWeight) * 100);
 
-    // Cap at 100, Min at 0
+    // Caps
     finalPercentage = Math.min(100, Math.max(0, finalPercentage));
 
     if (knockOutHit) {
-        finalPercentage = Math.min(finalPercentage, 40); // Cap score if knockout hit
-        findings.feedback_summary = "Tu CV ha sido descartado por filtros duros (Requisitos Excluyentes).";
-    } else if (finalPercentage >= 80) {
-        findings.feedback_summary = "Excelente compatibilidad. Tu CV pasará a revisión humana.";
-    } else if (finalPercentage >= 50) {
-        findings.feedback_summary = "Rendimiento medio. Agrega las palabras clave faltantes para asegurar pasar el filtro.";
+        finalPercentage = Math.min(finalPercentage, 45); // Hard cap si falla idioma
+        findings.feedback_summary = "Descarte probable por requisitos excluyentes (Idioma/Skills críticos).";
+    } else if (finalPercentage >= 85) {
+        findings.feedback_summary = "Excelente Match. Tu perfil técnico y contexto están alineados con la oferta.";
+    } else if (finalPercentage >= 60) {
+        findings.feedback_summary = "Buen potencial. Agrega las palabras clave faltantes para asegurar pasar el filtro.";
     } else {
-        findings.feedback_summary = "Baja compatibilidad. El ATS probablemente descarte tu perfil automáticamente.";
+        findings.feedback_summary = "Baja compatibilidad. Ajusta tu CV usando la terminología exacta de la oferta.";
     }
 
     findings.score = finalPercentage;
-
     return findings;
 };

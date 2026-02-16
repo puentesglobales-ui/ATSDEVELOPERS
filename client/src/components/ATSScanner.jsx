@@ -60,17 +60,17 @@ const ATSScanner = ({ session }) => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0A0E17] text-slate-200 p-6 flex flex-col items-center font-sans selection:bg-cyan-500/30">
+        <div className="min-h-screen bg-slate-50 text-slate-900 p-6 flex flex-col items-center font-sans selection:bg-cyan-500/30">
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="text-center mb-12"
             >
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-widest mb-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-600/5 border border-cyan-600/10 text-cyan-700 text-[10px] font-black uppercase tracking-widest mb-4">
                     <ShieldCheck size={12} /> Tecnología de Reclutamiento Enterprise
                 </div>
-                <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-2">
-                    Escáner <span className="text-cyan-500">ATS Pro</span>
+                <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter mb-2">
+                    Escáner <span className="text-cyan-600">ATS Pro</span>
                 </h1>
                 <p className="text-slate-500 font-medium">Auditoría de afinidad con vacantes internacionales mediante IA.</p>
             </motion.div>
@@ -78,18 +78,18 @@ const ATSScanner = ({ session }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-6xl">
                 {/* INPUT SECTION */}
                 <div className="space-y-6">
-                    <div className="bg-slate-900/50 border border-slate-800 p-8 rounded-[2.5rem] shadow-2xl space-y-6">
+                    <div className="bg-white border border-slate-200 p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 space-y-6">
                         {/* TABS */}
-                        <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5">
+                        <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
                             <button
                                 onClick={() => setInputMode('text')}
-                                className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${inputMode === 'text' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/20' : 'text-slate-500 hover:text-white'}`}
+                                className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${inputMode === 'text' ? 'bg-white text-slate-900 shadow-md border border-slate-200' : 'text-slate-500 hover:text-slate-900'}`}
                             >
                                 Pegar Texto
                             </button>
                             <button
                                 onClick={() => setInputMode('pdf')}
-                                className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${inputMode === 'pdf' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/20' : 'text-slate-500 hover:text-white'}`}
+                                className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${inputMode === 'pdf' ? 'bg-white text-slate-900 shadow-md border border-slate-200' : 'text-slate-500 hover:text-slate-900'}`}
                             >
                                 Subir PDF
                             </button>
@@ -97,15 +97,15 @@ const ATSScanner = ({ session }) => {
 
                         {/* CV Input Area */}
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-2">Tu Currículum</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2">Tu Currículum</label>
                             {inputMode === 'pdf' ? (
-                                <div className="border-2 border-dashed border-slate-800 rounded-3xl p-10 text-center hover:border-cyan-500/50 transition-colors cursor-pointer relative bg-black/20">
+                                <div className="border-2 border-dashed border-slate-200 rounded-3xl p-10 text-center hover:border-cyan-600/50 transition-colors cursor-pointer relative bg-slate-50">
                                     <input type="file" accept=".pdf" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                    {file ? <div className="text-cyan-400 flex items-center justify-center gap-2 font-black"><FileText /> {file.name}</div> : <span className="text-slate-600 font-bold">Arrastra tu PDF aquí o haz clic</span>}
+                                    {file ? <div className="text-cyan-600 flex items-center justify-center gap-2 font-black"><FileText /> {file.name}</div> : <span className="text-slate-400 font-bold">Arrastra tu PDF aquí o haz clic</span>}
                                 </div>
                             ) : (
                                 <textarea
-                                    className="w-full h-48 bg-black/20 border border-slate-800 rounded-3xl p-6 focus:border-cyan-500 outline-none transition-all text-sm leading-relaxed"
+                                    className="w-full h-48 bg-slate-50 border border-slate-200 rounded-3xl p-6 focus:border-cyan-600 outline-none transition-all text-sm leading-relaxed text-slate-700"
                                     placeholder="Pega el contenido de tu CV..."
                                     value={cvText}
                                     onChange={(e) => setCvText(e.target.value)}
@@ -115,9 +115,9 @@ const ATSScanner = ({ session }) => {
 
                         {/* Job Description */}
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-2">Descripción del Puesto</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2">Descripción del Puesto</label>
                             <textarea
-                                className="w-full h-48 bg-black/20 border border-slate-800 rounded-3xl p-6 focus:border-cyan-500 outline-none transition-all text-sm leading-relaxed"
+                                className="w-full h-48 bg-slate-50 border border-slate-200 rounded-3xl p-6 focus:border-cyan-600 outline-none transition-all text-sm leading-relaxed text-slate-700"
                                 placeholder="Pega los requisitos de la vacante..."
                                 value={jobDescription}
                                 onChange={(e) => setJobDescription(e.target.value)}
@@ -127,7 +127,7 @@ const ATSScanner = ({ session }) => {
                         <button
                             onClick={handleAnalyze}
                             disabled={analyzing}
-                            className="w-full py-5 bg-white text-black font-black rounded-2xl text-lg hover:scale-[1.02] transition-all shadow-2xl flex items-center justify-center gap-3 disabled:opacity-50"
+                            className="w-full py-5 bg-slate-900 text-white font-black rounded-2xl text-lg hover:scale-[1.02] transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center gap-3 disabled:opacity-50"
                         >
                             {analyzing ? <Loader className="animate-spin" /> : <Sparkles size={20} />}
                             {analyzing ? 'Procesando Algoritmos...' : 'Analizar Afinidad ATS'}
@@ -137,15 +137,15 @@ const ATSScanner = ({ session }) => {
                 </div>
 
                 {/* RESULTS SECTION */}
-                <div className="bg-slate-900/50 border border-slate-800 rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden min-h-[600px]">
+                <div className="bg-white border border-slate-200 rounded-[2.5rem] p-10 shadow-xl shadow-slate-200/50 relative overflow-hidden min-h-[600px]">
                     {!result ? (
-                        <div className="h-full flex items-center justify-center text-slate-700 flex-col gap-6 py-20">
-                            <div className="w-24 h-24 rounded-full border-4 border-slate-800 flex items-center justify-center">
-                                <Target size={40} className="text-slate-800" />
+                        <div className="h-full flex items-center justify-center text-slate-300 flex-col gap-6 py-20">
+                            <div className="w-24 h-24 rounded-full border-4 border-slate-100 flex items-center justify-center">
+                                <Target size={40} className="text-slate-200" />
                             </div>
                             <div className="text-center space-y-2">
                                 <p className="font-black uppercase tracking-[0.2em] text-xs">Esperando Datos</p>
-                                <p className="text-sm text-slate-600 font-medium">Completa los campos para simular el filtro de IA.</p>
+                                <p className="text-sm text-slate-400 font-medium">Completa los campos para simular el filtro de IA.</p>
                             </div>
                         </div>
                     ) : (
@@ -154,19 +154,19 @@ const ATSScanner = ({ session }) => {
                             <div className="text-center space-y-4">
                                 <div className="inline-block relative">
                                     <svg className="w-40 h-40 transform -rotate-90">
-                                        <circle cx="80" cy="80" r="70" fill="none" stroke="#1e293b" strokeWidth="10" />
-                                        <circle cx="80" cy="80" r="70" fill="none" stroke="#22d3ee" strokeWidth="10" strokeDasharray="440" strokeDashoffset={440 - (440 * result.score / 100)} strokeLinecap="round" className="transition-all duration-1000" />
+                                        <circle cx="80" cy="80" r="70" fill="none" stroke="#f1f5f9" strokeWidth="10" />
+                                        <circle cx="80" cy="80" r="70" fill="none" stroke="#0891b2" strokeWidth="10" strokeDasharray="440" strokeDashoffset={440 - (440 * result.score / 100)} strokeLinecap="round" className="transition-all duration-1000" />
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-5xl font-black text-white">{result.score}%</span>
-                                        <span className="text-[8px] font-black uppercase text-cyan-500 tracking-widest">Match Score</span>
+                                        <span className="text-5xl font-black text-slate-900">{result.score}%</span>
+                                        <span className="text-[8px] font-black uppercase text-cyan-600 tracking-widest">Match Score</span>
                                     </div>
                                 </div>
-                                <h3 className="text-2xl font-black text-white">{result.match_level}</h3>
+                                <h3 className="text-2xl font-black text-slate-800">{result.match_level}</h3>
                             </div>
 
                             {/* Status Message */}
-                            <div className={`p-6 rounded-[2rem] border ${result.score >= 80 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
+                            <div className={`p-6 rounded-[2rem] border ${result.score >= 80 ? 'bg-emerald-600/5 border-emerald-600/10 text-emerald-700' : 'bg-rose-600/5 border-rose-600/10 text-rose-700'}`}>
                                 <div className="flex items-center gap-3 font-black uppercase tracking-widest text-xs mb-2">
                                     {result.score >= 80 ? <CheckCircle /> : <XCircle />}
                                     Veredicto del Algoritmo
@@ -179,10 +179,10 @@ const ATSScanner = ({ session }) => {
                             </div>
 
                             {/* THE GATE: Recommendations (LOCKED) */}
-                            <div className="space-y-6 pt-8 border-t border-white/5 relative">
+                            <div className="space-y-6 pt-8 border-t border-slate-100 relative">
                                 <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Plan de Optimización</h4>
-                                    <span className="text-[8px] font-black bg-white/10 px-2 py-0.5 rounded text-slate-400">PREMIUM FEATURE</span>
+                                    <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Plan de Optimización</h4>
+                                    <span className="text-[8px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-500">PREMIUM FEATURE</span>
                                 </div>
 
                                 {/* BLURRED CONTENT */}
@@ -193,17 +193,17 @@ const ATSScanner = ({ session }) => {
                                 </div>
 
                                 {/* GATE OVERLAY */}
-                                <div className="absolute inset-x-0 bottom-0 top-[3rem] flex flex-col items-center justify-center bg-gradient-to-t from-[#0A0E17] via-[#0A0E17]/80 to-transparent p-6 text-center">
-                                    <div className="w-16 h-16 bg-cyan-500/20 rounded-2xl flex items-center justify-center text-cyan-400 mb-4">
+                                <div className="absolute inset-x-0 bottom-0 top-[3rem] flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm p-6 text-center">
+                                    <div className="w-16 h-16 bg-cyan-600/10 rounded-2xl flex items-center justify-center text-cyan-600 mb-4">
                                         <ShieldCheck size={32} />
                                     </div>
-                                    <h5 className="text-lg font-black text-white mb-2">Consejos de Mejora Bloqueados</h5>
-                                    <p className="text-xs text-slate-500 mb-6 max-w-[250px]">
-                                        El algoritmo ha identificado <span className="text-white">keywords faltantes</span> y fallos de formato, pero las recomendaciones son exclusivas de Alex IA.
+                                    <h5 className="text-lg font-black text-slate-900 mb-2">Consejos de Mejora Bloqueados</h5>
+                                    <p className="text-xs text-slate-500 mb-6 max-w-[250px] font-medium">
+                                        El algoritmo ha identificado <span className="text-slate-900">keywords faltantes</span> y fallos de formato, pero las recomendaciones son exclusivas de Alex IA.
                                     </p>
                                     <a
                                         href="https://wa.me/your-number-here"
-                                        className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-emerald-500/20 flex items-center gap-3"
+                                        className="px-8 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-slate-900/20 flex items-center gap-3"
                                     >
                                         <MessageCircle size={14} /> Desbloquear con Alex
                                     </a>

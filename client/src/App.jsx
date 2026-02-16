@@ -72,7 +72,7 @@ function App() {
 
   if (!supabase) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white p-4">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center text-slate-900 p-4">
         <div className="bg-red-500/10 border border-red-500 rounded-lg p-6 max-w-md text-center">
           <h2 className="text-xl font-bold text-red-400 mb-4">Error de Conexión</h2>
           <p className="text-slate-300 mb-4">
@@ -105,7 +105,7 @@ function App() {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Cargando...</div>;
+    return <div className="min-h-screen bg-white flex items-center justify-center text-slate-900">Cargando...</div>;
   }
 
   const getRedirectPath = () => {
@@ -137,7 +137,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen bg-slate-50">
         <Routes>
           <Route path="/login" element={!session ? <Login /> : <Navigate to={getRedirectPath()} />} />
 

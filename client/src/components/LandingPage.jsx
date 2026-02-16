@@ -111,7 +111,7 @@ const LandingPage = () => {
                         </h1>
 
                         <p className="text-xl md:text-2xl text-slate-500 font-medium max-w-3xl mx-auto mb-12 leading-relaxed">
-                            No es suerte. Es algoritmo. Usa la IA que los reclutadores <span className="text-slate-900">ya están usando</span> para filtrarte, pero esta vez a tu favor.
+                            No es suerte. Es algoritmo. Usa la IA que las <span className="text-slate-900 font-black">Empresas</span> ya están usando para filtrarte, pero esta vez a tu favor.
                         </p>
 
                         <div className="flex flex-col sm:flex-row justify-center gap-4 mb-20">
@@ -165,7 +165,7 @@ const LandingPage = () => {
                 <div className="container mx-auto px-6">
                     <div className="max-w-3xl mb-20 text-slate-900">
                         <h2 className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.4em] mb-4">Arsenal de Elite</h2>
-                        <h3 className="text-5xl font-black mb-6">4 Herramientas. 1 Objetivo: <br />Que te contraten.</h3>
+                        <h3 className="text-5xl font-black mb-6">4 Herramientas profesionales. <br />1 Objetivo: calificar para el trabajo.</h3>
                         <p className="text-slate-500 text-lg font-medium">Herramientas Enterprise que headhunters pagan por usar. Para ti, el acceso básico es <span className="text-slate-900">100% gratuito.</span></p>
                     </div>
 
@@ -207,8 +207,8 @@ const LandingPage = () => {
                                     <Bot size={32} />
                                 </div>
                                 <h3 className="text-5xl font-black leading-tight text-slate-900">Habla con Alex: <br />Tu Coach IA 24/7.</h3>
-                                <p className="text-xl text-slate-500 font-medium leading-relaxed">
-                                    "Soy Alex. Mi trabajo es leer entre líneas en tu CV y decirte exactamente qué te falta para ganar más. Sin rodeos, con datos reales de reclutamiento."
+                                <p className="text-xl text-slate-400 font-medium mb-10 leading-relaxed">
+                                    4 Herramientas profesionales + Coach con muchos años de experiencia. Alex optimiza tu CV y te entrena para las entrevistas más difíciles vía WhatsApp.
                                 </p>
                                 <div className="flex flex-col gap-4">
                                     <div className="flex items-center gap-4 text-slate-600 font-medium">
@@ -260,7 +260,6 @@ const LandingPage = () => {
                         {[
                             { q: "¿Realmente es gratis?", a: "Sí. Las herramientas básicas son gratuitas porque nuestro modelo se basa en candidatos premium y empresas que pagan por talento filtrado." },
                             { q: "¿Cómo sé que la IA no inventa cosas?", a: "Nuestra IA está entrenada con datasets de headhunters expertos y bases de datos reales de ATS como Greenhouse y Lever." },
-                            { q: "¿Qué pasa con mis datos?", a: "Tus datos están encriptados y cumplimos con GDPR. Tú controlas quién ve tu perfil y cuándo." },
                             { q: "¿Puedo usarlo si no hablo inglés?", a: "¡Claro! Alex te ayudará a optimizar tu perfil bilingüe para que puedas acceder a las mejores ofertas aunque estés aprendiendo." }
                         ].map((item, i) => (
                             <details key={i} className="group bg-white border border-slate-200 rounded-3xl p-6 cursor-pointer hover:border-cyan-600 transition-all shadow-sm">

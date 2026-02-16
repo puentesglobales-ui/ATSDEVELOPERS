@@ -8,7 +8,10 @@ import api from '../services/api';
 import { Navigate } from 'react-router-dom';
 
 const ATSScanner = ({ session }) => {
-    // Auth gate removed to allow unauthenticated scanning from landing page
+    // 1. STRICT GATE: Redirect to Login if no session
+    if (!session) {
+        return <Navigate to="/login" />;
+    }
 
     const [file, setFile] = useState(null);
     const [cvText, setCvText] = useState('');

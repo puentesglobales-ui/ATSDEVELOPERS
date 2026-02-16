@@ -30,7 +30,7 @@ const LandingPage = () => {
             badge: "GRATIS",
             icon: <Sparkles className="text-cyan-400" />,
             color: "cyan",
-            link: "/cv-wizard"
+            link: "/login"
         },
         {
             title: "Escáner ATS",
@@ -38,7 +38,7 @@ const LandingPage = () => {
             badge: "SCORE GRATIS",
             icon: <FileText className="text-blue-400" />,
             color: "blue",
-            link: "/ats-scanner"
+            link: "/login"
         },
         {
             title: "Test Psicométrico",
@@ -46,7 +46,7 @@ const LandingPage = () => {
             badge: "RESULTADO GRATIS",
             icon: <Brain className="text-purple-400" />,
             color: "purple",
-            link: "/psychometric"
+            link: "/login"
         },
         {
             title: "Búsqueda Laboral",
@@ -54,7 +54,7 @@ const LandingPage = () => {
             badge: "ILIMITADO",
             icon: <Search className="text-emerald-400" />,
             color: "emerald",
-            link: "/dashboard"
+            link: "/login"
         }
     ];
 
@@ -118,7 +118,7 @@ const LandingPage = () => {
                             <Link to="/cv-wizard" className="px-10 py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:scale-105 transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center gap-3">
                                 <Sparkles size={20} className="text-cyan-400" /> Crear mi CV con IA en 30s
                             </Link>
-                            <Link to="/ats-scanner" className="px-10 py-5 bg-white border border-slate-200 text-slate-900 rounded-2xl font-bold text-lg hover:bg-slate-50 transition-all flex items-center justify-center gap-3">
+                            <Link to="/login" className="px-10 py-5 bg-white border border-slate-200 text-slate-900 rounded-2xl font-bold text-lg hover:bg-slate-50 transition-all flex items-center justify-center gap-3">
                                 Escanear mi CV Actual (Gratis)
                             </Link>
                         </div>

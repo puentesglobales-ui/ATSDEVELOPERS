@@ -174,6 +174,10 @@ export default function Login() {
                     Continuar con Google
                 </button>
 
+                <p className="text-[10px] text-slate-400 text-center mb-6 leading-relaxed">
+                    Al continuar, permites que usemos tus datos para que, en caso de que una empresa se interese en tu perfil, puedan contactarte directamente por estas herramientas.
+                </p>
+
                 <div className="relative flex py-2 items-center">
                     <div className="flex-grow border-t border-slate-700"></div>
                     <span className="flex-shrink-0 mx-4 text-slate-500 text-xs uppercase">O usa tu email</span>

@@ -59,13 +59,9 @@ async function generateResponse(userMessage, personaKeyOrPrompt = 'RECRUITER_ALL
     let responseText = null;
 
     // Determine System Prompt
-    let systemPrompt = PERSONAS[personaKeyOrPrompt];
-    if (!systemPrompt) {
-        // Treat as raw prompt if not a known key
-        systemPrompt = personaKeyOrPrompt;
-    }
+    let systemPrompt = PERSONAS[personaKeyOrPrompt] || personaKeyOrPrompt;
 
-    // 1. Try GEMINI 2.0 FLASH (Fastest & Free-tier generous)
+    // 1. Try GEMINI 1.5 FLASH (Standard Stability)
     try {
         if (GENAI_API_KEY) {
             responseText = await callGeminiFlash(userMessage, systemPrompt, history);
@@ -78,7 +74,6 @@ async function generateResponse(userMessage, personaKeyOrPrompt = 'RECRUITER_ALL
     if (!responseText) {
         console.log("⚠️ Falling back to Secondary AI Provider...");
         try {
-            // Try DeepSeek if key exists, otherwise OpenAI
             if (DEEPSEEK_API_KEY) {
                 responseText = await callDeepSeek(userMessage, systemPrompt, history);
             } else if (OPENAI_API_KEY) {
@@ -95,24 +90,30 @@ async function generateResponse(userMessage, personaKeyOrPrompt = 'RECRUITER_ALL
 // --- Specific AI Implementations ---
 
 async function callGeminiFlash(message, systemPrompt, history) {
-    const genAI = new GoogleGenerativeAI(GENAI_API_KEY);
-    // Use systemInstruction for better persona adherence
-    const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
-        systemInstruction: systemPrompt
-    });
+    if (!GENAI_API_KEY) return null;
 
-    const chat = model.startChat({
-        history: formatHistoryForGemini(history),
-        generationConfig: {
-            maxOutputTokens: 1000, // Increased for interview feedback
-            temperature: 0.7,
-        }
-    });
+    try {
+        const genAI = new GoogleGenerativeAI(GENAI_API_KEY);
+        const model = genAI.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            systemInstruction: systemPrompt
+        });
 
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    return response.text();
+        const chat = model.startChat({
+            history: formatHistoryForGemini(history),
+            generationConfig: {
+                maxOutputTokens: 1000,
+                temperature: 0.7,
+            }
+        });
+
+        const result = await chat.sendMessage(message);
+        const response = await result.response;
+        return response.text();
+    } catch (err) {
+        console.error("❌ Gemini API Error:", err.message);
+        throw err;
+    }
 }
 
 async function callOpenAI(message, systemPrompt, history) {
@@ -123,7 +124,7 @@ async function callOpenAI(message, systemPrompt, history) {
     ];
 
     const res = await axios.post('https://api.openai.com/v1/chat/completions', {
-        model: "gpt-4o-mini", // Cost effective
+        model: "gpt-4o-mini",
         messages: messages,
         max_tokens: 500
     }, {
@@ -141,7 +142,7 @@ async function callDeepSeek(message, systemPrompt, history) {
         model: "deepseek-chat",
         messages: [
             { role: "system", content: systemPrompt },
-            ...history,
+            ...history.map(h => ({ role: h.role === 'user' ? 'user' : 'assistant', content: h.content })),
             { role: "user", content: message }
         ]
     }, {
@@ -155,20 +156,49 @@ async function callDeepSeek(message, systemPrompt, history) {
 
 // --- Helper: Format History ---
 function formatHistoryForGemini(history) {
-    let formatted = history.map(h => ({
-        role: h.role === 'user' ? 'user' : 'model',
-        parts: [{ text: h.content }]
-    }));
+    if (!history || !Array.isArray(history)) return [];
+
+    let formatted = [];
+    let lastRole = null;
+
+    for (const msg of history) {
+        if (msg.role === 'system') continue;
+        const role = msg.role === 'user' ? 'user' : 'model';
+
+        if (role !== lastRole) {
+            formatted.push({
+                role: role,
+                parts: [{ text: msg.content || "" }]
+            });
+            lastRole = role;
+        }
+    }
+
+    if (formatted.length > 0 && formatted[0].role !== 'user') {
+        formatted.shift();
+    }
+
     return formatted;
+}
+
+/**
+ * Cleans Markdown and special characters for TTS engines.
+ */
+function cleanTextForTTS(text) {
+    if (!text) return "";
+    return text
+        .replace(/[*_~`#]/g, '')
+        .replace(/!\[.*?\]\(.*?\)/g, '')
+        .replace(/\[.*?\]\(.*?\)/g, '')
+        .replace(/\{.*?\}/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
 // --- Audio Generation ---
 async function generateAudio(text, voiceId = "gemini_standard") {
-    // Placeholder - Logic handled in index.js currently
-    if (ELEVENLABS_API_KEY) {
-        return null; // Force fallback to index.js logic
-    }
-    return null;
+    return null; // Logic handled in index.js
 }
 
-module.exports = { generateResponse, generateAudio, PERSONAS };
+module.exports = { generateResponse, generateAudio, PERSONAS, cleanTextForTTS };
+

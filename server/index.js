@@ -7,6 +7,10 @@ const fs = require('fs');
 const path = require('path');
 const FormData = require('form-data');
 const axios = require('axios');
+const cvService = require('./services/cvService');
+const atsService = require('./services/atsService');
+const puentesGlobales = require('./services/puentesGlobalesService');
+const { normalizeCV } = require('./services/cvNormalizer');
 
 // Configure Multer for temp storage
 const uploadDir = 'uploads';
@@ -176,7 +180,8 @@ app.get('/api/admin/users', async (req, res) => {
 });
 
 // Admin Config Endpoint (For Provider Switcher)
-const aiRouter = require('./services/aiRouter'); // Ensure this is singleton
+const { generateResponse, generateAudio, PERSONAS, cleanTextForTTS } = require('./services/aiRouter'); // Ensure this is singleton
+const aiRouter = { override: null, abRatio: 0.5, setOverride: (v) => { aiRouter.override = v; } }; // Placeholder for stats logic if missing
 app.get('/api/admin/config', (req, res) => {
   res.json({
     force_provider: aiRouter.override || 'auto',
@@ -553,11 +558,114 @@ app.post('/api/generate-cv', async (req, res) => {
   }
 
   try {
-    const cvContent = await careerCoach.generateCV(userData);
-    res.json(cvContent);
+    console.log(`🚀 [CV-ENGINE] Generating stateless CV for ${userData.role} in ${userData.market || 'Global'}`);
+
+    // 1. Generate Content and Design Tokens in Parallel
+    const [aiContent, designTokens] = await Promise.all([
+      cvService.generateContent(userData),
+      cvService.generateDesignTokens(userData.market || 'Global', userData.industry || 'General')
+    ]);
+
+    // 2. Normalize for Safety
+    const cleanData = normalizeCV(aiContent);
+
+    // 3. Return both Content and Tokens
+    res.json({
+      data: cleanData,
+      tokens: designTokens,
+      metadata: {
+        generated_at: new Date().toISOString(),
+        engine: "Gemini 1.5 Flash (v5.1 Architecture)"
+      }
+    });
   } catch (error) {
     console.error('CV Generation Error:', error);
     res.status(500).json({ error: 'Generation failed', details: error.message });
+  }
+});
+
+app.post('/api/ats-optimize', async (req, res) => {
+  const { userData, jobDescription } = req.body;
+
+  if (!userData || !jobDescription) {
+    return res.status(400).json({ error: 'Missing user data or job description' });
+  }
+
+  try {
+    console.log(`🚀 [ATS-ENGINE] Optimizing CV for ${userData.role || 'User'} based on JD`);
+    const result = await atsService.getATSComparison(userData, jobDescription);
+
+    // Normalize the optimized content
+    const cleanContent = normalizeCV(result.optimized_content);
+
+    res.json({
+      ...result,
+      optimized_content: cleanContent
+    });
+  } catch (error) {
+    console.error('ATS Optimization Error:', error);
+    res.status(500).json({ error: 'Optimization failed', details: error.message });
+  }
+});
+
+// --- PUENTES GLOBALES ENGINE (PSICOMETRÍA ADAPTATIVA) ---
+
+app.post('/api/workpass/start', async (req, res) => {
+  const { cvText, jobTitle, userId } = req.body;
+  try {
+    if (!cvText || !jobTitle) return res.status(400).json({ error: "Missing CV text or Job Title" });
+
+    console.log(`🧠 [PUENTES-GLOBALES] Initializing adaptive assessment for ${jobTitle}`);
+    const assessment = await puentesGlobales.initializeAssessment(cvText, jobTitle);
+
+    // Persistencia para Anti Gravity (v5.1 Stateless Design)
+    if (userId && supabaseAdmin) {
+      try {
+        await supabaseAdmin.from('psychometric_evaluations').insert([{
+          user_id: userId,
+          job_title: jobTitle,
+          ai_analysis: { questions: assessment.questions, profile: assessment.role_profile, status: 'started' }
+        }]);
+      } catch (dbErr) { console.warn("DB Persist Failed:", dbErr.message); }
+    }
+
+    res.json(assessment);
+  } catch (error) {
+    console.error("Puentes Globales Start error:", error);
+    res.status(500).json({ error: "Failed to initialize assessment", details: error.message });
+  }
+});
+
+app.post('/api/workpass/submit', async (req, res) => {
+  const { userId, responses, profile, cvText, jobTitle } = req.body;
+  // responses: [{ trait: '...', value: 1-5, direction: '...' }]
+
+  try {
+    if (!responses || !profile) return res.status(400).json({ error: "Missing test responses or role profile" });
+
+    // 1. Math Calculation (Stateless)
+    const results = puentesGlobales.calculateResults(responses, profile);
+
+    // 2. AI FINAL REPORT (Cruce de datos)
+    console.log(`📄 [PUENTES-GLOBALES] Generating Final Report for ${userId}...`);
+    const report = await puentesGlobales.generateFinalReport(cvText || "", jobTitle || "General", results);
+
+    // 3. Persist Final Result
+    if (userId && supabaseAdmin) {
+      try {
+        await supabaseAdmin.from('psychometric_evaluations').insert([{
+          user_id: userId,
+          job_title: jobTitle,
+          match_score: results.fit_score,
+          ai_analysis: report
+        }]);
+      } catch (dbErr) { console.warn("DB Report Persist Failed:", dbErr.message); }
+    }
+
+    res.json({ results, report });
+  } catch (error) {
+    console.error("Puentes Globales Submit error:", error);
+    res.status(500).json({ error: "Failed to process assessment results", details: error.message });
   }
 });
 
@@ -685,11 +793,13 @@ app.post('/api/interview/speak', upload.single('audio'), async (req, res) => {
     // Get AI response
     // Get AI response (V2: returns { dialogue, feedback, stage })
     const responseObj = await interviewCoach.getInterviewResponse(newHistory, cvText, jobDescription, mode);
-    const assistantText = responseObj.dialogue || "Error generating response.";
+    const assistantText = cleanTextForTTS(responseObj.dialogue || "Error generating response.");
     const feedback = responseObj.feedback;
     const stage = responseObj.stage;
 
-    console.log('[Interview Speak] AI said:', assistantText);
+    if (!assistantText) {
+      return res.json({ userText, assistantText: "I'm sorry, I couldn't generate a response.", feedback, stage, audioBase64: null });
+    }
 
     // 3. TTS: ElevenLabs
     currentStage = 'TTS (ElevenLabs)';
@@ -699,37 +809,30 @@ app.post('/api/interview/speak', upload.single('audio'), async (req, res) => {
     if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
 
     const ELEVENLABS_VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
-
     const hash = crypto.createHash('md5').update(assistantText + ELEVENLABS_VOICE_ID).digest('hex');
     const cachePath = path.join(cacheDir, `${hash}.mp3`);
 
     let audioBase64;
-
     if (fs.existsSync(cachePath)) {
       audioBase64 = fs.readFileSync(cachePath).toString('base64');
+      console.log('✅ Audio loaded from cache');
     } else {
-      const elevenKey = process.env.ELEVENLABS_KEY_NEW
-        ? process.env.ELEVENLABS_KEY_NEW.trim()
-        : (process.env.ELEVENLABS_API_KEY ? process.env.ELEVENLABS_API_KEY.trim() : '');
-
-      const ttsResponse = await axios.post(
-        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
-        {
-          text: assistantText,
-          model_id: "eleven_monolingual_v1",
-          voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-        },
-        {
-          headers: {
-            'xi-api-key': elevenKey,
-            'Content-Type': 'application/json'
-          },
-          responseType: 'arraybuffer'
-        }
-      );
-
-      fs.writeFileSync(cachePath, Buffer.from(ttsResponse.data));
-      audioBase64 = Buffer.from(ttsResponse.data).toString('base64');
+      console.log('Generating new audio with Google TTS (FREE) 🎉');
+      try {
+        const googleTTS = require('google-tts-api');
+        const ttsUrl = googleTTS.getAudioUrl(assistantText, {
+          lang: 'en',
+          slow: false,
+          host: 'https://translate.google.com'
+        });
+        const ttsResponse = await axios.get(ttsUrl, { responseType: 'arraybuffer' });
+        fs.writeFileSync(cachePath, Buffer.from(ttsResponse.data));
+        audioBase64 = Buffer.from(ttsResponse.data).toString('base64');
+        console.log('✅ Google TTS Success (Cost: $0.00)');
+      } catch (err) {
+        console.error('[ERROR] Google TTS Failed:', err.message);
+        throw err;
+      }
     }
 
     res.json({
@@ -856,11 +959,12 @@ app.post('/api/speak', upload.single('audio'), async (req, res) => {
     });
 
     const aiContent = JSON.parse(chatCompletion.choices[0].message.content);
-    const assistantText = aiContent.dialogue;
+    const assistantText = cleanTextForTTS(aiContent.dialogue);
     const feedbackText = aiContent.feedback;
 
-    console.log('AI Dialogue:', assistantText);
-    console.log('AI Feedback:', feedbackText);
+    if (!assistantText) {
+      return res.json({ userText, assistantText: "Lo siento, no pude generar una respuesta.", feedbackText, audioBase64: null });
+    }
 
     // 3. TTS: ElevenLabs
     currentStage = 'TTS (ElevenLabs)';
@@ -881,31 +985,22 @@ app.post('/api/speak', upload.single('audio'), async (req, res) => {
       const audioBuffer = fs.readFileSync(cachePath);
       audioBase64 = audioBuffer.toString('base64');
     } else {
-      console.log('Generating new audio (API Call) 💸');
-
-      // Fix 401: Prefer New Key, Fallback to Old
-      const elevenKey = process.env.ELEVENLABS_KEY_NEW
-        ? process.env.ELEVENLABS_KEY_NEW.trim()
-        : (process.env.ELEVENLABS_API_KEY ? process.env.ELEVENLABS_API_KEY.trim() : '');
-
-      const ttsResponse = await axios.post(
-        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
-        {
-          text: assistantText,
-          model_id: "eleven_monolingual_v1",
-          voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-        },
-        {
-          headers: {
-            'xi-api-key': elevenKey,
-            'Content-Type': 'application/json'
-          },
-          responseType: 'arraybuffer'
-        }
-      );
-
-      fs.writeFileSync(cachePath, Buffer.from(ttsResponse.data));
-      audioBase64 = Buffer.from(ttsResponse.data).toString('base64');
+      console.log('Generating new audio with Google TTS (FREE) 🎉');
+      try {
+        const googleTTS = require('google-tts-api');
+        const ttsUrl = googleTTS.getAudioUrl(assistantText, {
+          lang: 'en',
+          slow: false,
+          host: 'https://translate.google.com'
+        });
+        const ttsResponse = await axios.get(ttsUrl, { responseType: 'arraybuffer' });
+        fs.writeFileSync(cachePath, Buffer.from(ttsResponse.data));
+        audioBase64 = Buffer.from(ttsResponse.data).toString('base64');
+        console.log('✅ Google TTS Success (Cost: $0.00)');
+      } catch (err) {
+        console.error('[ERROR] Google TTS Failed:', err.message);
+        throw err;
+      }
     }
 
     res.json({

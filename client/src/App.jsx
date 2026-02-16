@@ -18,6 +18,7 @@ import CVBuilder from './components/CVBuilder';
 import CVWizard from './components/CVWizard';
 import InterviewSimulator from './components/InterviewSimulator';
 import PsychometricTest from './components/PsychometricTest';
+import PuentesAssessment from './components/PuentesAssessment';
 import EtiquetadoDashboard from './components/EtiquetadoDashboard';
 
 
@@ -149,7 +150,7 @@ function App() {
           {/* Tools */}
           <Route path="/ats-scanner" element={<ProtectedRoute><ATSScanner session={session} /></ProtectedRoute>} />
           <Route path="/interview" element={<ProtectedRoute><InterviewSimulator session={session} /></ProtectedRoute>} />
-          <Route path="/psychometric" element={<ProtectedRoute><PsychometricTest /></ProtectedRoute>} />
+          <Route path="/psychometric" element={<ProtectedRoute><PuentesAssessment /></ProtectedRoute>} />
 
           {/* CEREBRO MAESTRO */}
           <Route path="/cerebro" element={<ProtectedRoute><EtiquetadoDashboard /></ProtectedRoute>} />

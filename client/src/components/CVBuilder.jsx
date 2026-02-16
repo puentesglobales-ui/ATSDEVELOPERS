@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import html2pdf from 'html2pdf.js';
+import CVRenderer from './CVRenderer';
+import ATSFeedback from './ATSFeedback';
 
 // --- MOCK TEMPLATES DATA ---
 const TEMPLATES = [
@@ -55,6 +57,10 @@ const CVBuilder = () => {
     const [activeTab, setActiveTab] = useState('templates'); // 'content', 'templates', 'style'
     const [selectedTemplate, setSelectedTemplate] = useState('ats-classic');
     const [searchQuery, setSearchQuery] = useState('');
+    const [designTokens, setDesignTokens] = useState(null);
+    const [atsData, setAtsData] = useState(null);
+    const [isOptimizing, setIsOptimizing] = useState(false);
+    const [jobDescription, setJobDescription] = useState('');
 
     // CV DATA STATE
     const [cvData, setCvData] = useState({
@@ -129,7 +135,8 @@ const CVBuilder = () => {
 
     const handleExportPDF = async () => {
         setIsExporting(true);
-        const element = document.getElementById('cv-document');
+        // Ensure we are in a scale that captures well
+        const element = document.getElementById('cv-document-renderer') || document.getElementById('cv-document');
 
         // Save current transform style to restore later
         const originalTransform = element.style.transform;
@@ -164,6 +171,37 @@ const CVBuilder = () => {
         }
     };
 
+    const handleAtsOptimize = async () => {
+        if (!jobDescription.trim()) return alert("Por favor, pega la oferta de empleo (Job Description)");
+
+        setIsOptimizing(true);
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const response = await fetch(`${API_URL}/api/ats-optimize`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userData: { ...wizardData, rawData: cvData },
+                    jobDescription
+                })
+            });
+
+            if (!response.ok) throw new Error('ATS Optimization failed');
+
+            const result = await response.json();
+            setAtsData(result);
+            setCvData(result.optimized_content); // Inject optimized content
+
+            // Notification or visual feedback
+            alert("¡CV Optimizado con las palabras clave de la vacante!");
+        } catch (error) {
+            console.error(error);
+            alert("Error al optimizar con ATS");
+        } finally {
+            setIsOptimizing(false);
+        }
+    };
+
     return (
         <div className="h-screen overflow-hidden bg-slate-900 flex flex-col md:flex-row text-slate-100">
             {/* SIDEBAR */}
@@ -173,11 +211,11 @@ const CVBuilder = () => {
                     <h1 className="font-bold text-lg">CV Architect AI</h1>
                 </div>
 
-                {/* TABS */}
                 <div className="flex p-2 gap-1 bg-slate-950 border-b border-slate-800">
-                    <button onClick={() => setActiveTab('templates')} className={`flex-1 py-2 text-sm rounded-lg transition-all ${activeTab === 'templates' ? 'bg-slate-800 text-white shadow' : 'text-slate-400 hover:text-white'}`}><Layout size={14} className="mx-auto mb-1" />Plantillas</button>
-                    <button onClick={() => setActiveTab('content')} className={`flex-1 py-2 text-sm rounded-lg transition-all ${activeTab === 'content' ? 'bg-slate-800 text-white shadow' : 'text-slate-400 hover:text-white'}`}><Type size={14} className="mx-auto mb-1" />Editor</button>
-                    <button onClick={() => setActiveTab('style')} className={`flex-1 py-2 text-sm rounded-lg transition-all ${activeTab === 'style' ? 'bg-slate-800 text-white shadow' : 'text-slate-400 hover:text-white'}`}><Palette size={14} className="mx-auto mb-1" />Estilo</button>
+                    <button onClick={() => setActiveTab('templates')} className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-tighter rounded-lg transition-all ${activeTab === 'templates' ? 'bg-slate-800 text-cyan-400 shadow' : 'text-slate-500 hover:text-white'}`}>Plantillas</button>
+                    <button onClick={() => setActiveTab('content')} className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-tighter rounded-lg transition-all ${activeTab === 'content' ? 'bg-slate-800 text-cyan-400 shadow' : 'text-slate-500 hover:text-white'}`}>Editor</button>
+                    <button onClick={() => setActiveTab('ats')} className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-tighter rounded-lg transition-all ${activeTab === 'ats' ? 'bg-cyan-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}>ATS Match</button>
+                    <button onClick={() => setActiveTab('style')} className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-tighter rounded-lg transition-all ${activeTab === 'style' ? 'bg-slate-800 text-cyan-400 shadow' : 'text-slate-500 hover:text-white'}`}>Estilo</button>
                 </div>
 
                 {/* CONTENT AREA OF SIDEBAR */}
@@ -278,6 +316,43 @@ const CVBuilder = () => {
                             <p className="text-sm text-slate-500">Próximamente: Personalización avanzada de fuentes y acentos de color.</p>
                         </div>
                     )}
+                    {/* ATS OPTIMIZATION TAB */}
+                    {activeTab === 'ats' && (
+                        <div className="space-y-6 pb-20">
+                            <div className="bg-cyan-900/10 border border-cyan-500/20 p-4 rounded-xl mb-4">
+                                <h3 className="text-cyan-400 font-bold text-sm mb-1 flex items-center gap-2">
+                                    <Target size={16} /> Optimizador ATS
+                                </h3>
+                                <p className="text-[10px] text-slate-400 leading-relaxed">
+                                    Pega la oferta de empleo aquí. Re-escribiremos tu CV usando las palabras clave exactas que busca el reclutador.
+                                </p>
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Job Description (JD)</label>
+                                <textarea
+                                    className="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs h-64 focus:border-cyan-500 outline-none resize-none text-slate-300 placeholder-slate-700"
+                                    placeholder="Pega aquí los requisitos de la vacante..."
+                                    value={jobDescription}
+                                    onChange={(e) => setJobDescription(e.target.value)}
+                                />
+                                <button
+                                    onClick={handleAtsOptimize}
+                                    disabled={isOptimizing || !jobDescription.trim()}
+                                    className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-800 disabled:text-slate-600 transition-all rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-cyan-900/20"
+                                >
+                                    {isOptimizing ? <Loader className="animate-spin" size={16} /> : <Target size={16} />}
+                                    {isOptimizing ? 'Escaneando...' : 'Optimizar para esta Vacante'}
+                                </button>
+                            </div>
+
+                            {atsData && (
+                                <div className="mt-8">
+                                    <ATSFeedback atsData={atsData} />
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -315,114 +390,30 @@ const CVBuilder = () => {
                     )}
                 </AnimatePresence>
 
-                {/* A4 PAPER PREVIEW */}
+                {/* A4 PAPER PREVIEW (DYNAMIC RENDERER) */}
                 <motion.div
-                    id="cv-document"
                     layout
-                    className="w-[210mm] min-h-[297mm] bg-white text-black shadow-2xl origin-top transform scale-[0.5] md:scale-[0.65] lg:scale-[0.85] xl:scale-100 transition-all rounded-sm overflow-hidden mt-12 md:mt-0"
+                    className="origin-top transform scale-[0.5] md:scale-[0.65] lg:scale-[0.85] xl:scale-100 transition-all shadow-2xl mt-12 md:mt-0"
                 >
-                    {/* --- TEMPLATE RENDERER --- */}
-
-                    {/* CLASSIC ATS */}
-                    {selectedTemplate === 'ats-classic' && (
-                        <div className="p-12 font-serif max-w-full h-full text-slate-900">
-                            <div className="text-center border-b-2 border-black pb-6 mb-6">
-                                <h1 className="text-4xl font-bold uppercase tracking-widest mb-2">{cvData.personal.name}</h1>
-                                <p className="text-base text-slate-700">{cvData.personal.location} | {cvData.personal.email} | {cvData.personal.phone}</p>
-                            </div>
-
-                            <div className="mb-8">
-                                <h2 className="text-sm font-bold uppercase border-b border-gray-300 mb-3 pb-1 tracking-wider">Professional Profile</h2>
-                                <p className="text-sm leading-relaxed text-justify">{cvData.personal.summary || 'Tu perfil profesional aparecerá aquí...'}</p>
-                            </div>
-
-                            <div className="mb-8">
-                                <h2 className="text-sm font-bold uppercase border-b border-gray-300 mb-4 pb-1 tracking-wider">Experience</h2>
-                                {cvData.experience.map(exp => (
-                                    <div key={exp.id} className="mb-4">
-                                        <div className="flex justify-between items-baseline mb-1">
-                                            <h3 className="font-bold text-lg">{exp.role}</h3>
-                                            <span className="text-sm italic font-medium">{exp.date}</span>
-                                        </div>
-                                        <div className="text-base font-semibold text-slate-800 mb-2">{exp.company}</div>
-                                        <p className="text-sm whitespace-pre-line leading-relaxed">{exp.description}</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div>
-                                <h2 className="text-sm font-bold uppercase border-b border-gray-300 mb-4 pb-1 tracking-wider">Education</h2>
-                                {cvData.education.map(edu => (
-                                    <div key={edu.id} className="mb-2">
-                                        <div className="flex justify-between">
-                                            <span className="font-bold">{edu.degree}</span>
-                                            <span className="text-sm italic">{edu.date}</span>
-                                        </div>
-                                        <div className="text-sm">{edu.school}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* MODERN TECH */}
-                    {selectedTemplate === 'modern-tech' && (
-                        <div className="h-full flex font-sans min-h-[297mm]">
-                            <div className="w-1/3 bg-slate-100 p-8 border-r border-slate-200 pt-16">
-                                <div className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-bold mb-6 mx-auto shadow-lg">
-                                    {cvData.personal.name.charAt(0)}
+                    {designTokens ? (
+                        <CVRenderer data={cvData} tokens={designTokens} />
+                    ) : (
+                        <div id="cv-document" className="w-[210mm] min-h-[297mm] bg-white text-black rounded-sm overflow-hidden p-12">
+                            {/* FALLBACK LEGACY RENDERER IF NO TOKENS YET */}
+                            <div className="font-serif text-slate-900">
+                                <h1 className="text-4xl font-bold uppercase text-center mb-6">{cvData.personal.name}</h1>
+                                <p className="text-center mb-8">{cvData.personal.email} | {cvData.personal.location}</p>
+                                <div className="mb-6 text-center py-20 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                                    <Sparkles className="mx-auto text-cyan-500 mb-4 animate-pulse" />
+                                    <p className="text-sm text-slate-400 italic">Redactando y diseñando con Inteligencia Artificial...</p>
                                 </div>
-                                <h2 className="font-bold text-blue-900 border-b-2 border-blue-200 pb-2 mb-4 uppercase text-xs tracking-wider">Contacto</h2>
-                                <p className="text-sm mb-2 break-words font-medium text-slate-700">{cvData.personal.email}</p>
-                                <p className="text-sm mb-2 text-slate-700">{cvData.personal.phone}</p>
-                                <p className="text-sm mb-8 text-slate-700">{cvData.personal.location}</p>
-
-                                <h2 className="font-bold text-blue-900 border-b-2 border-blue-200 pb-2 mb-4 uppercase text-xs tracking-wider">Educación</h2>
-                                {cvData.education.map(edu => (
-                                    <div key={edu.id} className="mb-4">
-                                        <p className="text-sm font-bold text-slate-800">{edu.degree}</p>
-                                        <p className="text-xs text-slate-600">{edu.school}</p>
-                                        <p className="text-xs text-blue-500">{edu.date}</p>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="w-2/3 p-10 pt-16">
-                                <h1 className="text-5xl font-bold text-blue-900 mb-2">{cvData.personal.name}</h1>
-                                <p className="text-xl text-blue-600 mb-8 font-medium">{wizardData.role || 'Senior Professional'}</p>
-
-                                <div className="bg-blue-50/50 p-6 rounded-xl border-l-4 border-blue-500 mb-10">
-                                    <p className="text-sm text-slate-700 leading-relaxed">{cvData.personal.summary}</p>
-                                </div>
-
-                                <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                                    <span className="w-2 h-8 bg-blue-600 rounded-full block"></span> Experiencia Profesional
-                                </h2>
-                                {cvData.experience.map(exp => (
-                                    <div key={exp.id} className="mb-8 relative pl-6 border-l-2 border-blue-100 ml-1">
-                                        <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-600 border-4 border-white shadow"></div>
-                                        <h3 className="font-bold text-lg text-slate-800">{exp.role}</h3>
-                                        <div className="text-blue-600 font-bold text-xs uppercase tracking-wide mb-3">{exp.company} • {exp.date}</div>
-                                        <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{exp.description}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Fallback for others */}
-                    {['euro-corp', 'creative-bold'].includes(selectedTemplate) && (
-                        <div className="h-[297mm] flex items-center justify-center p-12 bg-gray-50 text-center">
-                            <div>
-                                <h2 className="text-3xl font-bold text-slate-300 mb-4">Plantilla "{TEMPLATES.find(t => t.id === selectedTemplate)?.name}"</h2>
-                                <p className="text-slate-400">Vista previa simplificada para esta demo técnica.</p>
-                                <div className="mt-8 p-8 border border-slate-200 bg-white shadow-xl text-left max-w-lg mx-auto transform rotate-1">
-                                    <h1 className="text-2xl font-bold text-slate-800">{cvData.personal.name}</h1>
-                                    <p className="text-sm text-gray-500 mt-2">{cvData.personal.summary}</p>
+                                <div className="mb-6">
+                                    <h2 className="font-bold border-b-2 border-black mb-2 uppercase text-sm">Profile</h2>
+                                    <p className="text-sm">{cvData.personal.summary}</p>
                                 </div>
                             </div>
                         </div>
                     )}
-
                 </motion.div>
             </div>
         </div>

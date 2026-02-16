@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Upload, FileText, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Upload, FileText, AlertTriangle, CheckCircle, XCircle,
+    Target, Sparkles, Loader, ShieldCheck, MessageCircle, ArrowRight
+} from 'lucide-react';
 import api from '../services/api';
-
-import { analyzeATS } from '../services/atsLogic';
-
 import { Navigate } from 'react-router-dom';
 
 const ATSScanner = ({ session }) => {
     // 1. STRICT GATE: Redirect to Login if no session
-    // This runs before anything else renders
     if (!session) {
         return <Navigate to="/login" />;
     }
 
     const [file, setFile] = useState(null);
     const [cvText, setCvText] = useState('');
-    const [inputMode, setInputMode] = useState('text'); // Default to text for easier testing
+    const [inputMode, setInputMode] = useState('text');
     const [jobDescription, setJobDescription] = useState('');
     const [analyzing, setAnalyzing] = useState(false);
     const [result, setResult] = useState(null);
@@ -49,9 +48,7 @@ const ATSScanner = ({ session }) => {
                 formData.append('cvText', cvText);
             }
 
-            // Always call the Real AI Backend
             const response = await api.post('/analyze-cv', formData);
-
             setResult(response.data);
 
         } catch (err) {
@@ -63,275 +60,155 @@ const ATSScanner = ({ session }) => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-900 text-white p-6 flex flex-col items-center font-sans">
-            <motion.h1
+        <div className="min-h-screen bg-[#0A0E17] text-slate-200 p-6 flex flex-col items-center font-sans selection:bg-cyan-500/30">
+            <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent text-center"
+                className="text-center mb-12"
             >
-                AI Career Mastery Engine
-            </motion.h1>
-            <p className="text-slate-400 mb-8 text-center">Auditoría de Calidad & Estándar Europass (IA)</p>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-widest mb-4">
+                    <ShieldCheck size={12} /> Tecnología de Reclutamiento Enterprise
+                </div>
+                <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-2">
+                    Escáner <span className="text-cyan-500">ATS Pro</span>
+                </h1>
+                <p className="text-slate-500 font-medium">Auditoría de afinidad con vacantes internacionales mediante IA.</p>
+            </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-6xl">
                 {/* INPUT SECTION */}
                 <div className="space-y-6">
-                    {/* TABS: PDF VS TEXT */}
-                    <div className="flex bg-slate-800 p-1 rounded-xl border border-slate-700">
-                        <button
-                            onClick={() => setInputMode('pdf')}
-                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${inputMode === 'pdf' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            PDF Upload
-                        </button>
-                        <button
-                            onClick={() => setInputMode('text')}
-                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${inputMode === 'text' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            Pegar Texto
-                        </button>
-                    </div>
+                    <div className="bg-slate-900/50 border border-slate-800 p-8 rounded-[2.5rem] shadow-2xl space-y-6">
+                        {/* TABS */}
+                        <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5">
+                            <button
+                                onClick={() => setInputMode('text')}
+                                className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${inputMode === 'text' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/20' : 'text-slate-500 hover:text-white'}`}
+                            >
+                                Pegar Texto
+                            </button>
+                            <button
+                                onClick={() => setInputMode('pdf')}
+                                className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${inputMode === 'pdf' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/20' : 'text-slate-500 hover:text-white'}`}
+                            >
+                                Subir PDF
+                            </button>
+                        </div>
 
-                    {/* CV Input Area */}
-                    <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
-                        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                            {inputMode === 'pdf' ? <Upload className="text-blue-400" /> : <FileText className="text-blue-400" />}
-                            {inputMode === 'pdf' ? 'Sube tu CV (PDF)' : 'Pega el contenido de tu CV'}
-                        </h3>
-
-                        {inputMode === 'pdf' ? (
-                            <div className="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-blue-500 transition-colors cursor-pointer relative">
-                                <input
-                                    type="file"
-                                    accept=".pdf"
-                                    onChange={handleFileChange}
-                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                        {/* CV Input Area */}
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-2">Tu Currículum</label>
+                            {inputMode === 'pdf' ? (
+                                <div className="border-2 border-dashed border-slate-800 rounded-3xl p-10 text-center hover:border-cyan-500/50 transition-colors cursor-pointer relative bg-black/20">
+                                    <input type="file" accept=".pdf" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                    {file ? <div className="text-cyan-400 flex items-center justify-center gap-2 font-black"><FileText /> {file.name}</div> : <span className="text-slate-600 font-bold">Arrastra tu PDF aquí o haz clic</span>}
+                                </div>
+                            ) : (
+                                <textarea
+                                    className="w-full h-48 bg-black/20 border border-slate-800 rounded-3xl p-6 focus:border-cyan-500 outline-none transition-all text-sm leading-relaxed"
+                                    placeholder="Pega el contenido de tu CV..."
+                                    value={cvText}
+                                    onChange={(e) => setCvText(e.target.value)}
                                 />
-                                {file ? (
-                                    <div className="text-green-400 flex items-center justify-center gap-2 font-bold">
-                                        <FileText /> {file.name}
-                                    </div>
-                                ) : (
-                                    <span className="text-slate-400">Arrastra tu PDF aquí o haz clic</span>
-                                )}
-                            </div>
-                        ) : (
+                            )}
+                        </div>
+
+                        {/* Job Description */}
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-2">Descripción del Puesto</label>
                             <textarea
-                                value={cvText}
-                                onChange={(e) => setCvText(e.target.value)}
-                                placeholder="Copia y pega el texto de tu CV aquí para probar la lógica ATS..."
-                                className="bg-slate-900 w-full h-48 rounded-xl p-4 text-sm text-slate-300 border border-slate-600 focus:border-blue-500 focus:outline-none resize-none"
+                                className="w-full h-48 bg-black/20 border border-slate-800 rounded-3xl p-6 focus:border-cyan-500 outline-none transition-all text-sm leading-relaxed"
+                                placeholder="Pega los requisitos de la vacante..."
+                                value={jobDescription}
+                                onChange={(e) => setJobDescription(e.target.value)}
                             />
-                        )}
-                    </div>
+                        </div>
 
-                    {/* Job Description */}
-                    <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 h-64 flex flex-col">
-                        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                            <FileText className="text-purple-400" /> Descripción de la Vacante
-                        </h3>
-                        <textarea
-                            value={jobDescription}
-                            onChange={(e) => setJobDescription(e.target.value)}
-                            placeholder="Pega aquí la descripción del puesto (ej: requisitos, skills)..."
-                            className="bg-slate-900 w-full flex-1 rounded-xl p-4 text-sm text-slate-300 border border-slate-600 focus:border-purple-500 focus:outline-none resize-none"
-                        />
+                        <button
+                            onClick={handleAnalyze}
+                            disabled={analyzing}
+                            className="w-full py-5 bg-white text-black font-black rounded-2xl text-lg hover:scale-[1.02] transition-all shadow-2xl flex items-center justify-center gap-3 disabled:opacity-50"
+                        >
+                            {analyzing ? <Loader className="animate-spin" /> : <Sparkles size={20} />}
+                            {analyzing ? 'Procesando Algoritmos...' : 'Analizar Afinidad ATS'}
+                        </button>
+                        {error && <p className="text-red-400 text-center text-xs font-bold uppercase tracking-widest">{error}</p>}
                     </div>
-
-                    <button
-                        onClick={handleAnalyze}
-                        disabled={analyzing}
-                        className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/20 transition-all transform hover:-translate-y-1 disabled:opacity-50"
-                    >
-                        {analyzing ? 'Procesando Lógica ATS (GPT-4o)...' : 'EJECUTAR SIMULACIÓN ATS'}
-                    </button>
-                    {error && <p className="text-red-400 text-center">{error}</p>}
                 </div>
 
                 {/* RESULTS SECTION */}
-                <div className="bg-slate-800 rounded-3xl border border-slate-700 p-8 shadow-2xl relative overflow-y-auto max-h-[800px]">
+                <div className="bg-slate-900/50 border border-slate-800 rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden min-h-[600px]">
                     {!result ? (
-                        <div className="h-full flex items-center justify-center text-slate-500 flex-col gap-4">
-                            <div className="w-20 h-20 rounded-full border-4 border-slate-700 flex items-center justify-center">
-                                <span className="text-2xl font-bold">0%</span>
+                        <div className="h-full flex items-center justify-center text-slate-700 flex-col gap-6 py-20">
+                            <div className="w-24 h-24 rounded-full border-4 border-slate-800 flex items-center justify-center">
+                                <Target size={40} className="text-slate-800" />
                             </div>
-                            <p>Esperando análisis...</p>
+                            <div className="text-center space-y-2">
+                                <p className="font-black uppercase tracking-[0.2em] text-xs">Esperando Datos</p>
+                                <p className="text-sm text-slate-600 font-medium">Completa los campos para simular el filtro de IA.</p>
+                            </div>
                         </div>
                     ) : (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="space-y-6"
-                        >
-                            {/* Score Circle & Level */}
-                            <div className="flex flex-col items-center mb-6">
-                                <div className={`w-32 h-32 rounded-full border-8 flex items-center justify-center shadow-xl mb-2 ${result.score >= 80 ? 'border-green-500 text-green-400' : 'border-red-500 text-red-500'}`}>
-                                    <div className="text-center">
-                                        <span className="block text-4xl font-extrabold">{result.score}</span>
-                                        <span className="text-xs font-bold uppercase">ATS Score</span>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                            {/* Score Display */}
+                            <div className="text-center space-y-4">
+                                <div className="inline-block relative">
+                                    <svg className="w-40 h-40 transform -rotate-90">
+                                        <circle cx="80" cy="80" r="70" fill="none" stroke="#1e293b" strokeWidth="10" />
+                                        <circle cx="80" cy="80" r="70" fill="none" stroke="#22d3ee" strokeWidth="10" strokeDasharray="440" strokeDashoffset={440 - (440 * result.score / 100)} strokeLinecap="round" className="transition-all duration-1000" />
+                                    </svg>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                        <span className="text-5xl font-black text-white">{result.score}%</span>
+                                        <span className="text-[8px] font-black uppercase text-cyan-500 tracking-widest">Match Score</span>
                                     </div>
                                 </div>
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${result.score >= 80 ? 'bg-green-900/30 border-green-500 text-green-400' : 'bg-red-900/30 border-red-500 text-red-400'}`}>
-                                    Nivel: {result.match_level}
-                                </span>
+                                <h3 className="text-2xl font-black text-white">{result.match_level}</h3>
                             </div>
 
-                            {/* New Score Breakdown */}
-                            {result.breakdown && (
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                                    <div className="bg-slate-900 p-3 rounded-lg border border-slate-700">
-                                        <div className="text-xs text-slate-400 uppercase">Hard Skills</div>
-                                        <div className="text-lg font-bold text-blue-400">{result.breakdown.hard_skills}/40</div>
-                                    </div>
-                                    <div className="bg-slate-900 p-3 rounded-lg border border-slate-700">
-                                        <div className="text-xs text-slate-400 uppercase">Experiencia</div>
-                                        <div className="text-lg font-bold text-blue-400">{result.breakdown.experience}/25</div>
-                                    </div>
-                                    <div className="bg-slate-900 p-3 rounded-lg border border-slate-700">
-                                        <div className="text-xs text-slate-400 uppercase">Idiomas</div>
-                                        <div className="text-lg font-bold text-blue-400">{result.breakdown.languages}/10</div>
-                                    </div>
-                                    <div className="bg-slate-900 p-3 rounded-lg border border-slate-700">
-                                        <div className="text-xs text-slate-400 uppercase">Educación</div>
-                                        <div className="text-lg font-bold text-blue-400">{result.breakdown.education}/10</div>
-                                    </div>
-                                    <div className="bg-slate-900 p-3 rounded-lg border border-slate-700">
-                                        <div className="text-xs text-slate-400 uppercase">Soft Skills</div>
-                                        <div className="text-lg font-bold text-blue-400">{result.breakdown.soft_skills}/10</div>
-                                    </div>
-                                    <div className="bg-slate-900 p-3 rounded-lg border border-slate-700">
-                                        <div className="text-xs text-slate-400 uppercase">Formato</div>
-                                        <div className="text-lg font-bold text-blue-400">{result.breakdown.format}/5</div>
-                                    </div>
+                            {/* Status Message */}
+                            <div className={`p-6 rounded-[2rem] border ${result.score >= 80 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
+                                <div className="flex items-center gap-3 font-black uppercase tracking-widest text-xs mb-2">
+                                    {result.score >= 80 ? <CheckCircle /> : <XCircle />}
+                                    Veredicto del Algoritmo
                                 </div>
-                            )}
-
-                            {/* Killer Questions / Autoscreening Result */}
-                            {result.killer_questions_check && !result.killer_questions_check.passed && (
-                                <div className="bg-red-900/20 border border-red-500/50 p-4 rounded-xl mb-6">
-                                    <h4 className="text-red-400 font-bold flex items-center gap-2 mb-2">
-                                        <XCircle size={20} /> RECHAZO AUTOMÁTICO (Knockout Rule)
-                                    </h4>
-                                    <p className="text-sm text-red-200">{result.killer_questions_check.reason}</p>
-                                </div>
-                            )}
-
-                            {/* Executive Summary */}
-                            <div className="bg-slate-900 p-4 rounded-xl text-sm text-slate-300 leading-relaxed border border-slate-700">
-                                <span className="text-blue-400 font-bold block mb-1">Dictamen Técnico:</span>
-                                {result.summary || result.feedback_summary}
+                                <p className="text-sm font-medium leading-relaxed">
+                                    {result.score >= 80
+                                        ? "Tu perfil tiene una alta compatibilidad con el sistema de filtrado. Probabilidad de entrevista: ALTA."
+                                        : "El sistema ATS detecta brechas críticas entre tu CV y los requisitos. Probabilidad de entrevista: BAJA."}
+                                </p>
                             </div>
 
-                            {/* Missing Keywords (Hook vs Full) */}
-                            {result.hard_skills_analysis?.missing_keywords?.length > 0 && (
-                                <div>
-                                    <h4 className="text-slate-400 text-sm uppercase font-bold mb-2">
-                                        ⛔ Keywords Faltantes {result.hard_skills_analysis.is_locked && <span className="text-xs text-orange-400 ml-2">(Vista Previa Limitada)</span>}
-                                    </h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {result.hard_skills_analysis.missing_keywords.map((kw, i) => (
-                                            <span key={i} className="px-3 py-1 bg-red-900/20 border border-red-900/50 rounded-full text-xs text-red-300">
-                                                {kw}
-                                            </span>
-                                        ))}
-                                        {result.hard_skills_analysis.is_locked && (
-                                            <span className="px-3 py-1 bg-slate-800 border border-slate-700/50 rounded-full text-xs text-slate-500 italic flex items-center gap-1">
-                                                <AlertTriangle size={10} /> +{result.hard_skills_analysis.total_missing - 2} ocultas
-                                            </span>
-                                        )}
-                                    </div>
+                            {/* THE GATE: Recommendations (LOCKED) */}
+                            <div className="space-y-6 pt-8 border-t border-white/5 relative">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Plan de Optimización</h4>
+                                    <span className="text-[8px] font-black bg-white/10 px-2 py-0.5 rounded text-slate-400">PREMIUM FEATURE</span>
                                 </div>
-                            )}
 
-                            {/* LOCKED SECTION: EXPERIENCE */}
-                            <div className="relative group">
-                                <h4 className="text-slate-400 text-sm uppercase font-bold mb-2">Análisis de Experiencia</h4>
-                                {result.experience_analysis?.is_locked ? (
-                                    <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-700/50 relative overflow-hidden">
-                                        <div className="absolute inset-0 backdrop-blur-sm bg-black/40 flex flex-col items-center justify-center z-10">
-                                            <div className="bg-slate-900 p-2 rounded-full mb-2 shadow-xl border border-blue-500/30">
-                                                <AlertTriangle className="text-blue-400" />
-                                            </div>
-                                            <p className="text-sm font-bold text-white mb-2">Análisis Detallado Bloqueado</p>
-                                            <button className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold px-4 py-2 rounded-lg text-xs hover:scale-105 transition-transform">
-                                                DESBLOQUEAR PREMIUM
-                                            </button>
-                                        </div>
-                                        {/* Fake Content for Blur Effect */}
-                                        <p className="text-slate-600 blur-sm">
-                                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore...
-                                            Impacto no cuantificado en roles anteriores... falta uso de métricas claras.
-                                        </p>
+                                {/* BLURRED CONTENT */}
+                                <div className="space-y-4 opacity-10 blur-md pointer-events-none select-none">
+                                    <div className="bg-slate-800 p-4 rounded-2xl h-12 w-full"></div>
+                                    <div className="bg-slate-800 p-4 rounded-2xl h-24 w-full"></div>
+                                    <div className="bg-slate-800 p-4 rounded-2xl h-12 w-full"></div>
+                                </div>
+
+                                {/* GATE OVERLAY */}
+                                <div className="absolute inset-x-0 bottom-0 top-[3rem] flex flex-col items-center justify-center bg-gradient-to-t from-[#0A0E17] via-[#0A0E17]/80 to-transparent p-6 text-center">
+                                    <div className="w-16 h-16 bg-cyan-500/20 rounded-2xl flex items-center justify-center text-cyan-400 mb-4">
+                                        <ShieldCheck size={32} />
                                     </div>
-                                ) : (
-                                    <div className="bg-slate-900 p-4 rounded-xl text-sm text-slate-300 border border-slate-700">
-                                        {result.experience_analysis?.feedback}
-                                    </div>
-                                )}
+                                    <h5 className="text-lg font-black text-white mb-2">Consejos de Mejora Bloqueados</h5>
+                                    <p className="text-xs text-slate-500 mb-6 max-w-[250px]">
+                                        El algoritmo ha identificado <span className="text-white">keywords faltantes</span> y fallos de formato, pero las recomendaciones son exclusivas de Alex IA.
+                                    </p>
+                                    <a
+                                        href="https://wa.me/your-number-here"
+                                        className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-emerald-500/20 flex items-center gap-3"
+                                    >
+                                        <MessageCircle size={14} /> Desbloquear con Alex
+                                    </a>
+                                </div>
                             </div>
-
-                            {/* LOCKED SECTION: SOFT SKILLS */}
-                            <div className="relative">
-                                <h4 className="text-slate-400 text-sm uppercase font-bold mb-2">Soft Skills & Cultura</h4>
-                                {result.soft_skills_analysis?.is_locked ? (
-                                    <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 border-dashed text-center">
-                                        <p className="text-xs text-slate-500 italic flex items-center justify-center gap-2">
-                                            <AlertTriangle size={12} /> Disponible en versión PRO
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <p className="text-sm text-slate-300">{result.soft_skills_analysis?.feedback}</p>
-                                )}
-                            </div>
-
-                            {/* Red Flags / Issues */}
-                            {(result.red_flags?.length > 0) && (
-                                <div>
-                                    <h4 className="text-slate-400 text-sm uppercase font-bold mb-2">🚩 Red Flags</h4>
-                                    <ul className="space-y-2">
-                                        {result.red_flags.map((err, i) => (
-                                            <li key={i} className="flex items-start gap-2 text-sm text-red-300 bg-red-900/10 p-2 rounded-lg border border-red-900/30">
-                                                <XCircle size={16} className="mt-0.5 min-w-[16px]" /> {err}
-                                            </li>
-                                        ))}
-                                        {result.experience_analysis?.is_locked && (
-                                            <li className="text-xs text-slate-500 italic pl-6">... y otros riesgos detectados (Bloqueado)</li>
-                                        )}
-                                    </ul>
-                                </div>
-                            )}
-
-                            {/* Formatting Issues (Locked logic if needed, but usually open? Let's check backend) */}
-                            {result.formatting_analysis?.issues?.length > 0 && (
-                                <div>
-                                    <h4 className="text-slate-400 text-sm uppercase font-bold mb-2">⚠️ Formato & Europass Compliance</h4>
-                                    <ul className="space-y-1">
-                                        {result.formatting_analysis.issues.map((iss, i) => (
-                                            <li key={i} className="text-xs text-orange-300">• {iss}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-
-                            {/* Improvement Plan */}
-                            {result.improvement_plan?.length > 0 && (
-                                <div>
-                                    <h4 className="text-slate-400 text-sm uppercase font-bold mb-2">🚀 Plan de Mejora</h4>
-                                    <ul className="space-y-2">
-                                        {result.improvement_plan.map((step, i) => (
-                                            <li key={i} className="flex items-start gap-2 text-sm text-green-300 bg-green-900/10 p-2 rounded-lg border border-green-900/30">
-                                                <CheckCircle size={16} className="mt-0.5 min-w-[16px]" /> {step}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-
-                            {result.score < 80 && (
-                                <button className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-lg mt-4 transition-colors flex items-center justify-center gap-2 font-mono text-sm shadow-lg shadow-purple-900/50">
-                                    <AlertTriangle size={18} /> PASAR A MÓDULO II: CORRECTOR IA
-                                </button>
-                            )}
                         </motion.div>
                     )}
                 </div>
